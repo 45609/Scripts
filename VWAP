@@ -19,10 +19,10 @@ Anchor2 = input.string(defval = "Month", title = "VWAP2", group = Anchor_Period,
 Anchor3 = input.string(defval = "Week", title = "VWAP3", group = Anchor_Period, inline = "anchor_period2", options = ["Day", "Week", "Month", "Quarter", "Year", "Decade"])
 Anchor4 = input.string(defval = "Day", title = "VWAP4", group = Anchor_Period, inline = "anchor_period2", options = ["Day", "Week", "Month", "Quarter", "Year", "Decade"])
 
-General_Setings = "General Setings"
+General_Setings = "General Settings"
 Tooltip = "Determines the units used to calculate the distance of the bands. When 'Percentage' is selected, a multiplier of 1 means 1%."
-Src = input(title = "Source", defval = hlc3, group = General_Setings, inline = "general_setings", display = display.data_window)
-Mode = input.string(defval = "Standard", title = "Mode", options = ["Standard", "Percentage"], group = General_Setings, inline = "general_setings", tooltip = Tooltip, display = display.data_window)
+Src = input(title = "Source", defval = hlc3, group = General_Setings, inline = "general_settings", display = display.data_window)
+Mode = input.string(defval = "Standard", title = "Mode", options = ["Standard", "Percentage"], group = General_Setings, inline = "general_settings", tooltip = Tooltip, display = display.data_window)
 
 // VWAP #1 Settings
 VWAP1_Settings = "VWAP #1 Settings"
@@ -310,13 +310,13 @@ dayChange = timeframe.change('D')
 tfMultiplier = timeframe.multiplier
 
 dayOPenGrp = 'day Open'
-dayColor = input.color(color.rgb(240, 98, 146, 40), '', inline = 'DO', group = dayOPenGrp)
+dayColor = input.color(color.rgb(240, 98, 146, 20), '', inline = 'DO', group = dayOPenGrp)
 dayOpenEnabled = input(true, title = 'Opening Range', group = dayOPenGrp, inline = 'DO', display = display.data_window)
 dayOpen = input.string('1h' , '', options = ['5m', '15m', '30m', '1h'], inline='DO', group = dayOPenGrp)
 dayBgColor = input.color(color.rgb(240, 98, 146, 90), '', inline = 'DOStyle', group = dayOPenGrp)
 dayOpenTitle = input(true, title = 'Title', group = dayOPenGrp, inline = 'DOStyle', display = display.data_window)
 dayOpenPrice = input(true, title = 'Price', group = dayOPenGrp, inline = 'DOStyle', display = display.data_window)
-dayLineStyle = input.string("────", "", ["────", "---------", ".........."], inline="DOStyle", group = dayOPenGrp)
+dayLineStyle = input.string("..........", "", ["────", "---------", ".........."], inline="DOStyle", group = dayOPenGrp)
 
 var dayHistoryBar = 0
 var dayStartBar   = 0
@@ -499,7 +499,7 @@ var float lastWeeklyLower = na
 var float lastWeeklyUpper = na
 var int lastWeeklyStart = na
 var float lastWeeklyPOC = na
-lastWeeklyColor = input.color(title='',defval=color.rgb(0, 0, 0),group='weekly', inline='weekly1')
+lastWeeklyColor = input.color(title='',defval=color.rgb(133, 227, 167, 20),group='weekly', inline='weekly1')
 var bool enablelastWeeklyLower = input.bool(false, title="PWVAL",group='weekly', inline='weekly1')
 var bool enablelastWeeklyPOC = input.bool(false, title="PWPOC",group='weekly',   inline='weekly1')
 var bool enablelastWeeklyUpper = input.bool(false, title="PWVAH",group='weekly', inline='weekly1')
@@ -508,7 +508,7 @@ var float lastlastWeeklyLower = na
 var float lastlastWeeklyUpper = na
 var int lastlastWeeklyStart = na
 var float lastlastWeeklyPOC = na
-lastlastWeeklyColor = input.color(title='',defval=color.rgb(0, 0, 0), group='weekly', inline='weekly2')
+lastlastWeeklyColor = input.color(title='',defval=color.rgb(133, 227, 167, 20), group='weekly', inline='weekly2')
 var bool enablelastlastWeeklyLower = input.bool(false, title="PPWVAL",group='weekly', inline='weekly2')
 var bool enablelastlastWeeklyPOC = input.bool(false, title="PPWPOC",  group='weekly', inline='weekly2')
 var bool enablelastlastWeeklyUpper = input.bool(false, title="PPWVAH",group='weekly', inline='weekly2')
