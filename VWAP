@@ -715,17 +715,17 @@ if barstate.islast
     // 日线
     if enablelastdailyLower
         var lastdailyLower_line = line.new(x1=lastdailyStart,y1=lastdailyLower,x2=right_bar,y2=lastdailyLower, color=lastdailyColor, width=1, style=DEFAULT_LINE_STYLE)
-        var lastdailyLower_label = label.new(x=right_bar,y=lastdailyLower,text="PDVAL: "+ str.tostring(lastdailyLower, format_level ),color=label_color_setting,textcolor=#0c0c0c,style=DEFAULT_LABEL_STYLE, xloc=xloc.bar_index)
+        var lastdailyLower_label = label.new(x=right_bar,y=lastdailyLower,text="PDVAL: "+ str.tostring(lastdailyLower, format_level ),color=label_color_setting,textcolor=lastdailyColor,style=DEFAULT_LABEL_STYLE, xloc=xloc.bar_index)
         if mergebool
             f_LevelMerge(pricearray,labelarray,lastdailyLower,lastdailyLower_label,lastdailyColor)
     if enablelastdailyUpper
         var lastdailyUpper_line = line.new(x1=lastdailyStart, y1=lastdailyUpper, x2=right_bar,  y2=lastdailyUpper, color=lastdailyColor,width=1, style=DEFAULT_LINE_STYLE)
-        var lastdailyUpper_label = label.new(x=right_bar,y=lastdailyUpper, text="PDVAH: "+ str.tostring(lastdailyUpper,format_level ), color=label_color_setting,textcolor=#0c0c0c,style=DEFAULT_LABEL_STYLE, xloc=xloc.bar_index)
+        var lastdailyUpper_label = label.new(x=right_bar,y=lastdailyUpper, text="PDVAH: "+ str.tostring(lastdailyUpper,format_level ), color=label_color_setting,textcolor=lastdailyColor,style=DEFAULT_LABEL_STYLE, xloc=xloc.bar_index)
         if mergebool
             f_LevelMerge(pricearray,labelarray,lastdailyUpper,lastdailyUpper_label,lastdailyColor)
     if enablelastdailyPOC
         var lastdailyPOC_line = line.new(x1=lastdailyStart,y1=lastdailyPOC,x2=right_bar,y2=lastdailyPOC, color=lastdailyColor,width=1,style=DEFAULT_LINE_STYLE)
-        var lastdailyPOC_label = label.new(x=right_bar,y=lastdailyPOC,text="PDPOC: "+ str.tostring(lastdailyPOC,format_level ), color=label_color_setting,textcolor=#0c0c0c,style=DEFAULT_LABEL_STYLE, xloc=xloc.bar_index)
+        var lastdailyPOC_label = label.new(x=right_bar,y=lastdailyPOC,text="PDPOC: "+ str.tostring(lastdailyPOC,format_level ), color=label_color_setting,textcolor=lastdailyColor,style=DEFAULT_LABEL_STYLE, xloc=xloc.bar_index)
         if mergebool
             f_LevelMerge(pricearray,labelarray,lastdailyPOC,lastdailyPOC_label,lastdailyColor)
 
