@@ -6,6 +6,7 @@
 indicator("Stocks Markets Sessions", "Stocks Markets Sessions", overlay = true, max_bars_back = 5000, max_boxes_count = 500,max_labels_count = 500,max_lines_count = 500)
 
 YourTZ = input.string('UTC+8:00', 'Time Zone',group = 'Basic Setting')
+DaysToShow = input.int(2, "Days to Show", minval = 1, group = "Basic Setting")
 
 SessionsGrp = 'Stocks Markets Sessions'
 //Session Tokyo
@@ -16,13 +17,13 @@ sesTokyo_text = 'Tokyo ' + rangeTokyo
 
 sesLondon_color = input.color(#ACBBE8, '', inline = 'london', group = SessionsGrp)
 show_sesLondon = input(true, 'London', inline = 'london', group = SessionsGrp) 
-rangeLondon = input.string('1h' , '', options = ['5m', '15m', '30m', '1h', 'Session'], inline='london', group = SessionsGrp)
+rangeLondon = input.string('Session' , '', options = ['5m', '15m', '30m', '1h', 'Session'], inline='london', group = SessionsGrp)
 sesLondon_text = 'London ' + rangeLondon
 
 //Session NewYork
 sesNewYork_color = input.color(#C5ACE8, '', inline = 'newyork', group = SessionsGrp)
 show_sesNewYork = input(true, 'NewYork', inline = 'newyork', group = SessionsGrp)
-rangeNewYork = input.string('1h' , '', options = ['5m', '15m', '30m', '1h', 'Session'], inline='newyork', group = SessionsGrp)
+rangeNewYork = input.string('Session' , '', options = ['5m', '15m', '30m', '1h', 'Session'], inline='newyork', group = SessionsGrp)
 sesNewYork_text = 'New York ' + rangeNewYork
 
 //Info Table
@@ -31,28 +32,9 @@ Size = input.string(size.small , 'Table Text Size' , options = [size.small, size
 Position = input.string(position.top_right, 'Table Position', options = [position.top_left, position.top_center, position.top_right, position.middle_left, position.middle_center, position.middle_right, position.bottom_left, position.bottom_center, position.bottom_right] )
 
 tfMultiplier = timeframe.multiplier
-f_calculateOpeningRange(_numberOfDataRequired) =>
-    var orH = 0., var orL = 0.
-    [aH, aL] = request.security_lower_tf(syminfo.tickerid, '1', [high, low])
-
-    if array.size(aH) > 0
-        if _numberOfDataRequired >= tfMultiplier 
-            orH := array.max(aH)
-            orL := array.min(aL)
-
-        else if _numberOfDataRequired < tfMultiplier
-            if array.size(aH) >= _numberOfDataRequired
-                orH := array.get(aH, 0)
-                orL := array.get(aL, 0)
-
-                for c = 1 to _numberOfDataRequired - 1
-                    orH := math.max(array.get(aH, c), orH)
-                    orL := math.min(array.get(aL, c), orL)
-            else 
-                orH := array.max(aH)
-                orL := array.min(aL)
-    [orH, orL]
-
+enabledSessions = (show_sesTokyo ? 1 : 0) + (show_sesLondon ? 1 : 0) + (show_sesNewYork ? 1 : 0)
+var box[] boxesArray = array.new<box>()
+var label[] labelsArray = array.new<label>()
 //Session Timing
 var string Tokyo    = '0900-1500'
 var string London   = '0800-1630'
@@ -110,6 +92,13 @@ LowHighSessionDetector(On_Range, On_Session, Color_Session, Text_Session) =>
     if On_Session > On_Session[1] and str.tonumber(timeframe.period) <= 60
         BoX := box.new(bar_index,High, bar_index , Low, bgcolor = color.new(Color_Session, 85), border_color = color.rgb(34, 101, 155), border_style = line.style_dotted)
         LabeL := label.new(Bar, High , text = Text_Session ,xloc = xloc.bar_index, yloc = yloc.price, size = size.small, style = label.style_label_down, textcolor = Color_Session, color = color.rgb(255, 255, 255, 100))
+        
+        array.push(boxesArray, BoX)
+        array.push(labelsArray, LabeL)
+        
+        if array.size(boxesArray) > DaysToShow * enabledSessions
+            box.delete(array.shift(boxesArray))
+            label.delete(array.shift(labelsArray))
     if (On_Range[1] == 1 and On_Range == 1)
         box.set_top(BoX, High)
         box.set_bottom(BoX, Low)
