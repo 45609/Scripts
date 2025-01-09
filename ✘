@@ -1,0 +1,664 @@
+//@version=6
+indicator(title = '✘', shorttitle = '✘', overlay = true, max_bars_back = 5000, max_polylines_count = 100, max_boxes_count = 500, max_labels_count = 500, max_lines_count = 500)
+
+VWAP_Ctl = 'VWAP'
+// VWAP #1 Settings
+VWAP1_Settings = 'VWAP #1 Settings'
+VWAP1_Ctl = input(false, title = '', group = VWAP_Ctl, inline = VWAP1_Settings, display = display.data_window)
+Anchor1 = input.string(defval = 'Quarter', title = '', group = VWAP_Ctl, inline = VWAP1_Settings, options = ['Day', 'Week', 'Month', 'Quarter', 'Year'])
+VWAP1_Col = input.color(defval = color.rgb(255, 183, 77, 60), title = 'VWAP', group = VWAP_Ctl, inline = VWAP1_Settings)
+Bands1_Col = input.color(defval = color.rgb(255, 183, 77, 60), title = 'Bands', group = VWAP_Ctl, inline = VWAP1_Settings)
+VWAP1_Bgc = input.color(defval = color.rgb(255, 183, 77, 95), title = 'Fill', group = VWAP_Ctl, inline = VWAP1_Settings)
+
+// VWAP #2 Settings
+VWAP2_Settings = 'VWAP #2 Settings'
+VWAP2_Ctl = input(false, title = '', group = VWAP_Ctl, inline = VWAP2_Settings, display = display.data_window)
+Anchor2 = input.string(defval = 'Month', title = '', group = VWAP_Ctl, inline = VWAP2_Settings, options = ['Day', 'Week', 'Month', 'Quarter', 'Year'])
+VWAP2_Col = input.color(defval = color.rgb(240, 98, 146, 60), title = 'VWAP', group = VWAP_Ctl, inline = VWAP2_Settings)
+Bands2_Col = input.color(defval = color.rgb(240, 98, 146, 60), title = 'Bands', group = VWAP_Ctl, inline = VWAP2_Settings)
+VWAP2_Bgc = input.color(defval = color.rgb(240, 98, 146, 95), title = 'Fill', group = VWAP_Ctl, inline = VWAP2_Settings)
+
+// VWAP #3 Settings
+VWAP3_Settings = 'VWAP #3 Settings'
+VWAP3_Ctl = input(false, title = '', group = VWAP_Ctl, inline = VWAP3_Settings, display = display.data_window)
+Anchor3 = input.string(defval = 'Week', title = '', group = VWAP_Ctl, inline = VWAP3_Settings, options = ['Day', 'Week', 'Month', 'Quarter', 'Year'])
+VWAP3_Col = input.color(defval = color.rgb(133, 227, 167, 60), title = 'VWAP', group = VWAP_Ctl, inline = VWAP3_Settings)
+Bands3_Col = input.color(defval = color.rgb(133, 227, 167, 60), title = 'Bands', group = VWAP_Ctl, inline = VWAP3_Settings)
+VWAP3_Bgc = input.color(defval = color.rgb(133, 227, 167, 95), title = 'Fill', group = VWAP_Ctl, inline = VWAP3_Settings)
+
+// VWAP #4 Settings
+VWAP4_Settings = 'VWAP #4 Settings'
+VWAP4_Ctl = input(false, title = '', group = VWAP_Ctl, inline = VWAP4_Settings, display = display.data_window)
+Anchor4 = input.string(defval = 'Day', title = '', group = VWAP_Ctl, inline = VWAP4_Settings, options = ['Day', 'Week', 'Month', 'Quarter', 'Year'])
+VWAP4_Col = input.color(defval = color.rgb(255, 255, 255, 60), title = 'VWAP', group = VWAP_Ctl, inline = VWAP4_Settings)
+Bands4_Col = input.color(defval = color.rgb(255, 255, 255, 60), title = 'Bands', group = VWAP_Ctl, inline = VWAP4_Settings)
+VWAP4_Bgc = input.color(defval = color.rgb(255, 255, 255, 95), title = 'Fill', group = VWAP_Ctl, inline = VWAP4_Settings)
+
+Src = hlc3
+var pricearray = array.new_float(0)
+var labelarray = array.new_label(0)
+label_color_setting = color.new(#ecf008, 100)
+right_bar = bar_index + 18
+format_level = '#.####'
+
+var DEFAULT_LINE_STYLE = line.style_dotted
+var DEFAULT_LABEL_STYLE = label.style_label_left
+var DEFAULT_EXTEND_RIGHT = 18
+
+isNewQuarter = switch Anchor1
+    'Day' => timeframe.change('D')
+    'Week' => timeframe.change('W')
+    'Month' => timeframe.change('M')
+    'Quarter' => timeframe.change('3M')
+    'Year' => timeframe.change('12M')
+    'Decade' => timeframe.change('12M') and year % 10 == 0
+    'Century' => timeframe.change('12M') and year % 100 == 0
+    => false
+
+isNewMonth = switch Anchor2
+    'Day' => timeframe.change('D')
+    'Week' => timeframe.change('W')
+    'Month' => timeframe.change('M')
+    'Quarter' => timeframe.change('3M')
+    'Year' => timeframe.change('12M')
+    'Decade' => timeframe.change('12M') and year % 10 == 0
+    'Century' => timeframe.change('12M') and year % 100 == 0
+    => false
+
+isNewWeek = switch Anchor3
+    'Day' => timeframe.change('D')
+    'Week' => timeframe.change('W')
+    'Month' => timeframe.change('M')
+    'Quarter' => timeframe.change('3M')
+    'Year' => timeframe.change('12M')
+    'Decade' => timeframe.change('12M') and year % 10 == 0
+    'Century' => timeframe.change('12M') and year % 100 == 0
+    => false
+
+isNewDay = switch Anchor4
+    'Day' => timeframe.change('D')
+    'Week' => timeframe.change('W')
+    'Month' => timeframe.change('M')
+    'Quarter' => timeframe.change('3M')
+    'Year' => timeframe.change('12M')
+    'Decade' => timeframe.change('12M') and year % 10 == 0
+    'Century' => timeframe.change('12M') and year % 100 == 0
+    => false
+
+float Vwap1 = na
+float Band1_Upper = na
+float Band1_Lower = na
+float Vwap2 = na
+float Band2_Upper = na
+float Band2_Lower = na
+float Vwap3 = na
+float Band3_Upper = na
+float Band3_Lower = na
+float Vwap4 = na
+float Band4_Upper = na
+float Band4_Lower = na
+
+if not timeframe.isdwm
+    [_vwap1, _stdevUpper, _] = ta.vwap(Src, isNewQuarter, 1)
+    Vwap1 := _vwap1
+    stdevAbs = _stdevUpper - _vwap1
+    Band1_Upper := _vwap1 + stdevAbs * 1.0
+    Band1_Lower := _vwap1 - stdevAbs * 1.0
+    Band1_Lower
+
+if not timeframe.isdwm
+    [_vwap2, _stdevUpper, _] = ta.vwap(Src, isNewMonth, 1)
+    Vwap2 := _vwap2
+    stdevAbs = _stdevUpper - _vwap2
+    Band2_Upper := _vwap2 + stdevAbs * 1.0
+    Band2_Lower := _vwap2 - stdevAbs * 1.0
+    Band2_Lower
+
+if not timeframe.isdwm
+    [_vwap3, _stdevUpper, _] = ta.vwap(Src, isNewWeek, 1)
+    Vwap3 := _vwap3
+    stdevAbs = _stdevUpper - _vwap3
+    Band3_Upper := _vwap3 + stdevAbs * 1.0
+    Band3_Lower := _vwap3 - stdevAbs * 1.0
+    Band3_Lower
+
+if not timeframe.isdwm
+    [_vwap4, _stdevUpper, _] = ta.vwap(Src, isNewDay, 1)
+    Vwap4 := _vwap4
+    stdevAbs = _stdevUpper - _vwap4
+    Band4_Upper := _vwap4 + stdevAbs * 1.0
+    Band4_Lower := _vwap4 - stdevAbs * 1.0
+    Band4_Lower
+
+vwap_plot1 = plot(VWAP1_Ctl ? Vwap1 : na, color = VWAP1_Col)
+lowerBand_1 = plot(VWAP1_Ctl ? Band1_Lower : na, color = Bands1_Col)
+upperBand_1 = plot(VWAP1_Ctl ? Band1_Upper : na, color = Bands1_Col)
+fill(upperBand_1, lowerBand_1, color = VWAP1_Bgc)
+
+vwap_plot2 = plot(VWAP2_Ctl ? Vwap2 : na, color = VWAP2_Col)
+lowerBand_2 = plot(VWAP2_Ctl ? Band2_Lower : na, color = Bands2_Col)
+upperBand_2 = plot(VWAP2_Ctl ? Band2_Upper : na, color = Bands2_Col)
+fill(upperBand_2, lowerBand_2, color = VWAP2_Bgc)
+
+vwap_plot3 = plot(VWAP3_Ctl ? Vwap3 : na, color = VWAP3_Col)
+lowerBand_3 = plot(VWAP3_Ctl ? Band3_Lower : na, color = Bands3_Col)
+upperBand_3 = plot(VWAP3_Ctl ? Band3_Upper : na, color = Bands3_Col)
+fill(upperBand_3, lowerBand_3, color = VWAP3_Bgc)
+
+vwap_plot4 = plot(VWAP4_Ctl ? Vwap4 : na, color = VWAP4_Col)
+lowerBand_4 = plot(VWAP4_Ctl ? Band4_Lower : na, color = Bands4_Col)
+upperBand_4 = plot(VWAP4_Ctl ? Band4_Upper : na, color = Bands4_Col)
+fill(upperBand_4, lowerBand_4, color = VWAP4_Bgc)
+
+// Stocks Markets Sessions
+YourTZ = input.string('UTC+8:00', 'Time Zone', group = 'Basic Setting')
+DaysToShow = input.int(3, 'Days to Show', minval = 1, group = 'Basic Setting')
+
+SessionsGrp = 'Stocks Markets Sessions'
+//Session Tokyo
+sesTokyo_color = input.color(color.rgb(91, 156, 246), '', inline = 'tokyo', group = SessionsGrp)
+show_sesTokyo = input(true, 'Tokyo    ', inline = 'tokyo', group = SessionsGrp)
+rangeTokyo = input.string('1h', '', options = ['5m', '15m', '30m', '1h', 'Session'], inline = 'tokyo', group = SessionsGrp)
+
+sesLondon_color = input.color(#ACBBE8, '', inline = 'london', group = SessionsGrp)
+show_sesLondon = input(false, 'London   ', inline = 'london', group = SessionsGrp)
+rangeLondon = input.string('Session', '', options = ['5m', '15m', '30m', '1h', 'Session'], inline = 'london', group = SessionsGrp)
+
+//Session NewYork
+sesNewYork_color = input.color(#C5ACE8, '', inline = 'newyork', group = SessionsGrp)
+show_sesNewYork = input(false, 'NewYork  ', inline = 'newyork', group = SessionsGrp)
+rangeNewYork = input.string('Session', '', options = ['5m', '15m', '30m', '1h', 'Session'], inline = 'newyork', group = SessionsGrp)
+
+//Info Table
+Show_Info_Table = input(false, 'Info Table', group = 'Table')
+Size = input.string(size.small, 'Table Text Size', options = [size.small, size.normal])
+Position = input.string(position.top_right, 'Table Position', options = [position.top_left, position.top_center, position.top_right, position.middle_left, position.middle_center, position.middle_right, position.bottom_left, position.bottom_center, position.bottom_right])
+
+tfMultiplier = timeframe.multiplier
+enabledSessions = (show_sesTokyo ? 1 : 0) + (show_sesLondon ? 1 : 0) + (show_sesNewYork ? 1 : 0)
+var array<box> boxesArray = array.new<box>()
+//Session Timing
+var string Tokyo = '0900-1500'
+var string London = '0800-1630'
+var string NewYork = '0930-1600'
+
+// Tokyo Range
+var string Tokyo_Range = rangeTokyo == '5m' ? '0900-0905' : rangeTokyo == '15m' ? '0900-0915' : rangeTokyo == '30m' ? '0900-0930' : rangeTokyo == '1h' ? '0900-1000' : Tokyo
+// London Range
+var string London_Range = rangeLondon == '5m' ? '0800-0805' : rangeLondon == '15m' ? '0800-0815' : rangeLondon == '30m' ? '0800-0830' : rangeLondon == '1h' ? '0800-0900' : London
+
+// New York Range
+var string NewYork_Range = rangeNewYork == '5m' ? '0930-0935' : rangeNewYork == '15m' ? '0930-0945' : rangeNewYork == '30m' ? '0930-1000' : rangeNewYork == '1h' ? '0930-1030' : NewYork
+
+TokyoTZ = 'Asia/Tokyo'
+LondonTZ = 'Europe/London'
+NewYorkTZ = 'America/New_York'
+
+On_sesTokyo = math.sign(nz(time(timeframe.period, Tokyo, TokyoTZ)))
+On_sesLondon = math.sign(nz(time(timeframe.period, London, LondonTZ)))
+On_sesNewYork = math.sign(nz(time(timeframe.period, NewYork, NewYorkTZ)))
+
+On_rangeTokyo = math.sign(nz(time(timeframe.period, Tokyo_Range, TokyoTZ)))
+On_rangeLondon = math.sign(nz(time(timeframe.period, London_Range, LondonTZ)))
+On_rangeNewyork = math.sign(nz(time(timeframe.period, NewYork_Range, NewYorkTZ)))
+
+//High & Low Session Detector 
+LowHighSessionDetector(On_Range, On_Session, Color_Session) =>
+    var int Bar = 0
+    var float High = 0.0
+    var float Low = 0.0
+    var box BoX = na
+
+    if On_Range[1] == 0 and On_Range == 1
+        Bar := bar_index
+        High := high
+        Low := low
+        Low
+    else if On_Range[1] == 1 and On_Range == 1
+        High := math.max(high, High)
+        Low := math.min(low, Low)
+        Low
+    else if On_Session == 0
+        High := 0.0
+        Low := 0.0
+        Bar := 0
+        Bar
+
+    if On_Session > On_Session[1] and str.tonumber(timeframe.period) <= 60
+        BoX := box.new(bar_index, High, bar_index, Low, bgcolor = color.new(Color_Session, 85), border_color = color.new(Color_Session, 100), border_style = line.style_dotted)
+        array.push(boxesArray, BoX)
+
+        if array.size(boxesArray) > DaysToShow * enabledSessions
+            box.delete(array.shift(boxesArray))
+    if On_Range[1] == 1 and On_Range == 1
+        box.set_top(BoX, High)
+        box.set_bottom(BoX, Low)
+    if On_Session[1] == 1 and On_Session == 1
+        box.set_right(BoX, bar_index)
+    if Color_Session == sesTokyo_color and not timeframe.change('D') and rangeTokyo != 'Session'
+        box.set_right(BoX, bar_index)
+
+if show_sesTokyo
+    LowHighSessionDetector(On_rangeTokyo, On_sesTokyo, sesTokyo_color)
+
+if show_sesLondon
+    LowHighSessionDetector(On_rangeLondon, On_sesLondon, sesLondon_color)
+
+if show_sesNewYork
+    LowHighSessionDetector(On_rangeNewyork, On_sesNewYork, sesNewYork_color)
+
+//Info Table
+
+// Start and Enf Time in Info Table
+SplitFunction(x, TZ, YourTZ) =>
+    Text = str.split(x, '-')
+    STime = Text.size() > 0 ? Text.get(0) : '0000'
+    ETime = Text.size() > 0 ? Text.get(1) : '0000'
+    SHour = str.substring(STime, 0, 2)
+    SMin = str.substring(STime, 2, 4)
+    EHour = str.substring(ETime, 0, 2)
+    EMin = str.substring(ETime, 2, 4)
+    SUTCTimestamp = timestamp(TZ, year, month, dayofmonth, int(str.tonumber(SHour)), int(str.tonumber(SMin)), 0)
+    EUTCTimestamp = timestamp(TZ, year, month, dayofmonth, int(str.tonumber(EHour)), int(str.tonumber(EMin)), 0)
+    SconvertedHour = hour(SUTCTimestamp, YourTZ)
+    SconvertedMinute = minute(SUTCTimestamp, YourTZ)
+    EconvertedHour = hour(EUTCTimestamp, YourTZ)
+    EconvertedMinute = minute(EUTCTimestamp, YourTZ)
+    YourStart = str.tostring(SconvertedHour) + ':' + str.tostring(SconvertedMinute < 10 ? '0' + str.tostring(SconvertedMinute) : str.tostring(SconvertedMinute))
+    YourEnd = str.tostring(EconvertedHour) + ':' + str.tostring(EconvertedMinute < 10 ? '0' + str.tostring(EconvertedMinute) : str.tostring(EconvertedMinute))
+
+    Start = YourStart
+    End = YourEnd
+    [Start, End]
+
+[Tokyo_Start, Tokyo_End] = SplitFunction(Tokyo, TokyoTZ, YourTZ)
+[London_Start, London_End] = SplitFunction(London, LondonTZ, YourTZ)
+[NewYork_Start, NewYork_End] = SplitFunction(NewYork, NewYorkTZ, YourTZ)
+
+
+var Info_Table = table.new(Position, 5, 11, bgcolor = color.rgb(255, 255, 255, 100), border_color = color.rgb(255, 255, 255, 90), border_width = 1, frame_color = #373a46, frame_width = 1)
+
+if Show_Info_Table
+    table.cell(Info_Table, 0, 1, 'Session', text_color = color.white, text_size = Size)
+    table.cell(Info_Table, 1, 1, 'Start(' + YourTZ + ')', text_color = color.white, text_size = Size)
+    table.cell(Info_Table, 2, 1, 'End(' + YourTZ + ')', text_color = color.white, text_size = Size)
+
+    table.cell(Info_Table, 0, 2, 'Tokyo', text_color = sesTokyo_color, text_size = Size)
+    table.cell(Info_Table, 0, 3, 'London', text_color = sesLondon_color, text_size = Size)
+    table.cell(Info_Table, 0, 4, 'NewYork', text_color = sesNewYork_color, text_size = Size)
+
+    //Start Time
+    table.cell(Info_Table, 1, 2, Tokyo_Start, text_color = color.white, text_size = Size)
+    table.cell(Info_Table, 1, 3, London_Start, text_color = color.white, text_size = Size)
+    table.cell(Info_Table, 1, 4, NewYork_Start, text_color = color.white, text_size = Size)
+    //End Time
+    table.cell(Info_Table, 2, 2, Tokyo_End, text_color = color.white, text_size = Size)
+    table.cell(Info_Table, 2, 3, London_End, text_color = color.white, text_size = Size)
+    table.cell(Info_Table, 2, 4, NewYork_End, text_color = color.white, text_size = Size)
+
+var g_VP = 'Volume Profile'
+enable_vp = input.bool(true, 'Enable VP', group = g_VP)
+show_vp = input.bool(true, 'Show VP         ', inline = 'VP', tooltip = 'Whether to show the volume profile', group = g_VP)
+vp_color = input.color(color.rgb(93, 96, 107, 70), '', inline = 'VP', group = g_VP)
+show_vpoc = input.bool(true, 'Show VPOC      ', inline = 'VPOC', tooltip = 'Whether to show the volume point of control (VPOC), or the level with the largest volume in a given volume profile', group = g_VP)
+vpoc_color = input.color(color.rgb(240, 98, 146), '', inline = 'VPOC', group = g_VP)
+rows = input.int(200, 'Rows', 0, 200, tooltip = 'The number of price levels/rows that will be used to approximate the cumulative volume profile', group = g_VP)
+tf = input.timeframe('W', 'Profile Timeframe', tooltip = 'The aggregate timeframe that the volume profile represents', group = g_VP)
+ltf = input.timeframe('3', 'Resolution Timeframe', tooltip = 'The timeframe whose price data will be used to build the volume profile', group = g_VP)
+extend = input.int(30, 'Profile Extend %', 0, 100, tooltip = 'How much the volume profile should extend to the next session', group = g_VP)
+
+var vpoc = array.new_line()
+
+var values = array.new_float()
+var x_vol = array.new_int()
+var y_vol = array.new_float()
+
+var PLA = array.new<chart.point>()
+var polyline PL = na
+var line temp_vpoc = na
+var line temp_line = na
+var label temp_label = na
+
+var int lb_idx = na
+var int lb_time = na
+
+ltf := timeframe.in_seconds(ltf) <= timeframe.in_seconds() ? ltf : ''
+[ltf_H, ltf_L, ltf_V] = request.security_lower_tf(syminfo.tickerid, ltf, [high, low, volume])
+
+if not na(lb_idx) and enable_vp
+    lb = bar_index - lb_idx > 0 ? bar_index - lb_idx : 1
+
+    y_max = ta.highest(high[1], lb)
+    y_min = ta.lowest(low[1], lb)
+
+    if timeframe.change(tf) or barstate.islast
+        x_vol.clear()
+        y_vol.clear()
+        values.clear()
+
+        for i = 0 to rows by 1
+            y = y_min + i * (y_max - y_min) / rows
+            x_vol.push(lb_time)
+            y_vol.push(y)
+            values.push(0)
+
+        for i = bar_index - lb_idx to 1 by 1
+            vol = ltf_V[i]
+            if vol.size() > 0
+                for j = 0 to values.size() - 1 by 1
+                    temp = y_vol.get(j)
+                    for k = 0 to vol.size() - 1 by 1
+                        H = ltf_H[i]
+                        L = ltf_L[i]
+                        V = ltf_V[i]
+                        if H.get(k) >= temp and L.get(k) <= temp
+                            add = math.floor(V.get(k) / ((H.get(k) - L.get(k)) / (y_max - y_min) / rows))
+                            values.set(j, values.get(j) + add)
+
+        max_y = y_vol.get(values.indexof(values.max()))
+        sf = values.max() / (time[1] - lb_time) / (extend / 100)
+
+        for j = 0 to values.size() - 1 by 1
+            set = lb_time + math.floor(values.get(j) / sf)
+            x_vol.set(j, set)
+
+        PLA.clear()
+        PLA.push(chart.point.from_time(lb_time, y_min))
+        for i = 0 to x_vol.size() - 1 by 1
+            PLA.push(chart.point.from_time(x_vol.get(i), y_vol.get(i)))
+        PLA.push(chart.point.from_time(lb_time, y_max))
+
+        PL.delete()
+        if timeframe.change(tf)
+            polyline.new(PLA, curved = false, closed = true, line_color = show_vp ? vp_color : na, fill_color = show_vp ? vp_color : na, xloc = xloc.bar_time)
+            temp_vpoc.delete()
+            temp_line.delete()
+            temp_label.delete()
+            vpoc.unshift(line.new(lb_time, max_y, time, max_y, xloc = xloc.bar_time, color = show_vpoc ? vpoc_color : na, width = 1))
+        else
+            PL := polyline.new(PLA, curved = false, closed = true, line_color = show_vp ? vp_color : na, fill_color = show_vp ? vp_color : na, xloc = xloc.bar_time)
+            if na(temp_vpoc)
+                temp_vpoc := line.new(lb_time, max_y, time, max_y, xloc = xloc.bar_time, color = show_vpoc ? vpoc_color : na, width = 1)
+                temp_line := line.new(bar_index, max_y, bar_index + 18, max_y, xloc = xloc.bar_index, color = show_vpoc ? vpoc_color : na, width = 1)
+                temp_label := label.new(bar_index + 18, max_y, text = "POC", tooltip = str.tostring(max_y, "#.####"), color = color.rgb(0, 0, 0, 100), textcolor = show_vpoc ? vpoc_color : na, style = label.style_label_left, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+                temp_vpoc
+            temp_vpoc.set_y1(max_y)
+            temp_vpoc.set_xy2(time, max_y)
+            temp_line.set_xy1(bar_index, max_y)
+            temp_line.set_xy2(bar_index + 18, max_y)
+            temp_label.set_xy(bar_index + 18, max_y)
+
+if timeframe.change(tf)
+    lb_idx := bar_index
+    lb_time := time
+
+
+VWAP_Grp = 'VWAP Key Level'
+currentDailyColor = input.color(title = '', defval = color.rgb(255, 255, 255, 20), group = VWAP_Grp, inline = 'daily1')
+currentDaily = input.string(defval = 'Day', title = '', group = VWAP_Grp, inline = 'daily1', options = ['Day'])
+var bool enablecurrentDailyLower = input.bool(false, title = 'Lower', group = VWAP_Grp, inline = 'daily1')
+var bool enablecurrentDailyPOC = input.bool(false, title = 'VWAP', group = VWAP_Grp, inline = 'daily1')
+var bool enablecurrentDailyUpper = input.bool(false, title = 'Upper', group = VWAP_Grp, inline = 'daily1')
+
+var float lastdailyLower = na
+var float lastdailyUpper = na
+var int lastdailyStart = na
+var float lastdailyPOC = na
+lastdailyColor = input.color(title = '', defval = color.rgb(255, 255, 255, 20), group = VWAP_Grp, inline = 'daily2')
+lastdaily = input.string(defval = '↳', title = '', group = VWAP_Grp, inline = 'daily2', options = ['↳'])
+var bool enablelastdailyLower = input.bool(false, title = 'Lower', group = VWAP_Grp, inline = 'daily2')
+var bool enablelastdailyPOC = input.bool(false, title = 'VWAP', group = VWAP_Grp, inline = 'daily2')
+var bool enablelastdailyUpper = input.bool(false, title = 'Upper', group = VWAP_Grp, inline = 'daily2')
+
+currentWeeklyColor = input.color(title = '', defval = color.rgb(133, 227, 167, 20), group = VWAP_Grp, inline = 'weekly3')
+currentWeekly = input.string(defval = 'Week', title = '', group = VWAP_Grp, inline = 'weekly3', options = ['Week'])
+var bool enablecurrentWeeklyLower = input.bool(false, title = 'Lower', group = VWAP_Grp, inline = 'weekly3')
+var bool enablecurrentWeeklyPOC = input.bool(false, title = 'VWAP', group = VWAP_Grp, inline = 'weekly3')
+var bool enablecurrentWeeklyUpper = input.bool(false, title = 'Upper', group = VWAP_Grp, inline = 'weekly3')
+
+var float lastWeeklyLower = na
+var float lastWeeklyUpper = na
+var int lastWeeklyStart = na
+var float lastWeeklyPOC = na
+lastWeeklyColor = input.color(title = '', defval = color.rgb(133, 227, 167, 20), group = VWAP_Grp, inline = 'weekly1')
+lastWeekly = input.string(defval = '↳', title = '', group = VWAP_Grp, inline = 'weekly1', options = ['↳'])
+var bool enablelastWeeklyLower = input.bool(false, title = 'Lower', group = VWAP_Grp, inline = 'weekly1')
+var bool enablelastWeeklyPOC = input.bool(false, title = 'VWAP', group = VWAP_Grp, inline = 'weekly1')
+var bool enablelastWeeklyUpper = input.bool(false, title = 'Upper', group = VWAP_Grp, inline = 'weekly1')
+
+var float lastlastWeeklyLower = na
+var float lastlastWeeklyUpper = na
+var int lastlastWeeklyStart = na
+var float lastlastWeeklyPOC = na
+lastlastWeeklyColor = input.color(title = '', defval = color.rgb(133, 227, 167, 20), group = VWAP_Grp, inline = 'weekly2')
+lastlastWeekly = input.string(defval = '↳ ↳', title = '', group = VWAP_Grp, inline = 'weekly2', options = ['↳ ↳'])
+var bool enablelastlastWeeklyLower = input.bool(false, title = 'Lower', group = VWAP_Grp, inline = 'weekly2')
+var bool enablelastlastWeeklyPOC = input.bool(false, title = 'VWAP', group = VWAP_Grp, inline = 'weekly2')
+var bool enablelastlastWeeklyUpper = input.bool(false, title = 'Upper', group = VWAP_Grp, inline = 'weekly2')
+
+currentMonthlyColor = input.color(title = '', defval = color.rgb(240, 98, 146, 20), group = VWAP_Grp, inline = 'monthly3')
+currentMonthly = input.string(defval = 'Month', title = '', group = VWAP_Grp, inline = 'monthly3', options = ['Month'])
+var bool enablecurrentMonthlyLower = input.bool(false, title = 'Lower', group = VWAP_Grp, inline = 'monthly3')
+var bool enablecurrentMonthlyPOC = input.bool(false, title = 'VWAP', group = VWAP_Grp, inline = 'monthly3')
+var bool enablecurrentMonthlyUpper = input.bool(false, title = 'Upper', group = VWAP_Grp, inline = 'monthly3')
+
+var float lastMonthlyLower = na
+var float lastMonthlyUpper = na
+var int lastMonthlyStart = na
+var float lastMonthlyPOC = na
+lastMonthlyColor = input.color(title = '', defval = color.rgb(240, 98, 146, 20), group = VWAP_Grp, inline = 'monthly1')
+lastMonthly = input.string(defval = '↳', title = '', group = VWAP_Grp, inline = 'monthly1', options = ['↳'])
+var bool enablelastMonthlyLower = input.bool(false, title = 'Lower', group = VWAP_Grp, inline = 'monthly1')
+var bool enablelastMonthlyPOC = input.bool(false, title = 'VWAP', group = VWAP_Grp, inline = 'monthly1')
+var bool enablelastMonthlyUpper = input.bool(false, title = 'Upper', group = VWAP_Grp, inline = 'monthly1')
+
+var float lastlastMonthlyLower = na
+var float lastlastMonthlyUpper = na
+var int lastlastMonthlyStart = na
+var float lastlastMonthlyPOC = na
+lastlastMonthlyColor = input.color(title = '', defval = color.rgb(240, 98, 146, 20), group = VWAP_Grp, inline = 'monthly2')
+lastlastMonthly = input.string(defval = '↳ ↳', title = '', group = VWAP_Grp, inline = 'monthly2', options = ['↳ ↳'])
+var bool enablelastlastMonthlyLower = input.bool(false, title = 'Lower', group = VWAP_Grp, inline = 'monthly2')
+var bool enablelastlastMonthlyPOC = input.bool(false, title = 'VWAP', group = VWAP_Grp, inline = 'monthly2')
+var bool enablelastlastMonthlyUpper = input.bool(false, title = 'Upper', group = VWAP_Grp, inline = 'monthly2')
+
+currentQuarterlyColor = input.color(title = '', defval = color.rgb(255, 183, 77, 20), group = VWAP_Grp, inline = 'quarterly3')
+currentQuarterly = input.string(defval = 'Quarter', title = '', group = VWAP_Grp, inline = 'quarterly3', options = ['Quarter'])
+var bool enablecurrentQuarterlyLower = input.bool(false, title = 'Lower', group = VWAP_Grp, inline = 'quarterly3')
+var bool enablecurrentQuarterlyPOC = input.bool(false, title = 'VWAP', group = VWAP_Grp, inline = 'quarterly3')
+var bool enablecurrentQuarterlyUpper = input.bool(false, title = 'Upper', group = VWAP_Grp, inline = 'quarterly3')
+
+var float lastQuarterlyLower = na
+var float lastQuarterlyUpper = na
+var int lastQuarterlyStart = na
+var float lastQuarterlyPOC = na
+lastQuarterlyColor = input.color(title = '', defval = color.rgb(255, 183, 77, 20), group = VWAP_Grp, inline = 'quarterly1')
+lastQuarterly = input.string(defval = '↳', title = '', group = VWAP_Grp, inline = 'quarterly1', options = ['↳'])
+var bool enablelastQuarterlyLower = input.bool(false, title = 'Lower', group = VWAP_Grp, inline = 'quarterly1')
+var bool enablelastQuarterlyPOC = input.bool(false, title = 'VWAP', group = VWAP_Grp, inline = 'quarterly1')
+var bool enablelastQuarterlyUpper = input.bool(false, title = 'Upper', group = VWAP_Grp, inline = 'quarterly1')
+
+var float lastlastQuarterlyLower = na
+var float lastlastQuarterlyUpper = na
+var int lastlastQuarterlyStart = na
+var float lastlastQuarterlyPOC = na
+lastlastQuarterlyColor = input.color(title = '', defval = color.rgb(255, 183, 77, 20), group = VWAP_Grp, inline = 'quarterly2')
+lastlastQuarterly = input.string(defval = '↳ ↳', title = '', group = VWAP_Grp, inline = 'quarterly2', options = ['↳ ↳'])
+var bool enablelastlastQuarterlyLower = input.bool(false, title = 'Lower', group = VWAP_Grp, inline = 'quarterly2')
+var bool enablelastlastQuarterlyPOC = input.bool(false, title = 'VWAP', group = VWAP_Grp, inline = 'quarterly2')
+var bool enablelastlastQuarterlyUpper = input.bool(false, title = 'Upper', group = VWAP_Grp, inline = 'quarterly2')
+
+currentyearlyColor = input.color(title = '', defval = color.rgb(91, 156, 246, 20), group = VWAP_Grp, inline = 'yearly3')
+currentyearly = input.string(defval = 'Year', title = '', group = VWAP_Grp, inline = 'yearly3', options = ['Year'])
+var bool enablecurrentyearlyLower = input.bool(false, title = 'Lower', group = VWAP_Grp, inline = 'yearly3')
+var bool enablecurrentyearlyPOC = input.bool(false, title = 'VWAP', group = VWAP_Grp, inline = 'yearly3')
+var bool enablecurrentyearlyUpper = input.bool(false, title = 'Upper', group = VWAP_Grp, inline = 'yearly3')
+
+calcVWAP(src, isNewPeriod) =>
+    [_vwap, _stdevUpper, _] = ta.vwap(src, isNewPeriod, 1)
+    stdevAbs = _stdevUpper - _vwap
+    upperBand = _vwap + stdevAbs * 1.0
+    lowerBand = _vwap - stdevAbs * 1.0
+    [_vwap, upperBand, lowerBand]
+
+[yearlyVWAP, yearlyUpper, yearlyLower] = calcVWAP(Src, timeframe.change('12M'))
+[quarterlyVWAP, quarterlyUpper, quarterlyLower] = calcVWAP(Src, timeframe.change('3M'))
+[monthlyVWAP, monthlyUpper, monthlyLower] = calcVWAP(Src, timeframe.change('M'))
+[weeklyVWAP, weeklyUpper, weeklyLower] = calcVWAP(Src, timeframe.change('W'))
+[dailyVWAP, dailyUpper, dailyLower] = calcVWAP(Src, timeframe.change('D'))
+
+if timeframe.change('3M')
+    lastlastQuarterlyLower := lastQuarterlyLower
+    lastlastQuarterlyUpper := lastQuarterlyUpper
+    lastlastQuarterlyStart := lastQuarterlyStart
+    lastlastQuarterlyPOC := lastQuarterlyPOC
+    lastQuarterlyLower := quarterlyLower[1]
+    lastQuarterlyUpper := quarterlyUpper[1]
+    lastQuarterlyStart := bar_index[1]
+    lastQuarterlyPOC := quarterlyVWAP[1]
+    lastQuarterlyPOC
+
+if timeframe.change('M')
+    lastlastMonthlyLower := lastMonthlyLower
+    lastlastMonthlyUpper := lastMonthlyUpper
+    lastlastMonthlyStart := lastMonthlyStart
+    lastlastMonthlyPOC := lastMonthlyPOC
+    lastMonthlyLower := monthlyLower[1]
+    lastMonthlyUpper := monthlyUpper[1]
+    lastMonthlyStart := bar_index[1]
+    lastMonthlyPOC := monthlyVWAP[1]
+    lastMonthlyPOC
+
+if timeframe.change('W')
+    lastlastWeeklyLower := lastWeeklyLower
+    lastlastWeeklyUpper := lastWeeklyUpper
+    lastlastWeeklyStart := lastWeeklyStart
+    lastlastWeeklyPOC := lastWeeklyPOC
+    lastWeeklyLower := weeklyLower[1]
+    lastWeeklyUpper := weeklyUpper[1]
+    lastWeeklyStart := bar_index[1]
+    lastWeeklyPOC := weeklyVWAP[1]
+    lastWeeklyPOC
+
+if timeframe.change('D')
+    lastdailyLower := dailyLower[1]
+    lastdailyUpper := dailyUpper[1]
+    lastdailyStart := bar_index[1]
+    lastdailyPOC := dailyVWAP[1]
+    lastdailyPOC
+
+if barstate.islast
+    // Daily
+    if enablelastdailyLower
+        var lastdailyLowerline = line.new(x1 = lastdailyStart, y1 = lastdailyLower, x2 = right_bar, y2 = lastdailyLower, color = lastdailyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var lastdailyLowerlabel = label.new(x = right_bar, y = lastdailyLower, text = 'pdVWAP -1', tooltip = str.tostring(lastdailyLower, format_level), color = label_color_setting, textcolor = lastdailyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablelastdailyUpper
+        var lastdailyUpperline = line.new(x1 = lastdailyStart, y1 = lastdailyUpper, x2 = right_bar, y2 = lastdailyUpper, color = lastdailyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var lastdailyUpperlabel = label.new(x = right_bar, y = lastdailyUpper, text = 'pdVWAP +1', tooltip = str.tostring(lastdailyUpper, format_level), color = label_color_setting, textcolor = lastdailyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablelastdailyPOC
+        var lastdailyPOCline = line.new(x1 = lastdailyStart, y1 = lastdailyPOC, x2 = right_bar, y2 = lastdailyPOC, color = lastdailyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var lastdailyPOClabel = label.new(x = right_bar, y = lastdailyPOC, text = 'pdVWAP', tooltip = str.tostring(lastdailyPOC, format_level), color = label_color_setting, textcolor = lastdailyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablecurrentDailyLower
+        var lastdailyLowerline = line.new(x1 = lastdailyStart, y1 = dailyLower, x2 = right_bar, y2 = dailyLower, color = currentDailyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var lastdailyLowerlabel = label.new(x = right_bar, y = dailyLower, text = 'dVWAP -1', tooltip = str.tostring(dailyLower, format_level), color = label_color_setting, textcolor = currentDailyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablecurrentDailyUpper
+        var lastdailyUpperline = line.new(x1 = lastdailyStart, y1 = dailyUpper, x2 = right_bar, y2 = dailyUpper, color = currentDailyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var lastdailyUpperlabel = label.new(x = right_bar, y = dailyUpper, text = 'dVWAP +1', tooltip = str.tostring(dailyUpper, format_level), color = label_color_setting, textcolor = currentDailyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablecurrentDailyPOC
+        var lastdailyPOCline = line.new(x1 = lastdailyStart, y1 = dailyVWAP, x2 = right_bar, y2 = dailyVWAP, color = currentDailyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var lastdailyPOClabel = label.new(x = right_bar, y = dailyVWAP, text = 'dVWAP', tooltip = str.tostring(dailyVWAP, format_level), color = label_color_setting, textcolor = currentDailyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    // Weekly
+    if enablelastWeeklyLower
+        var lastWeeklyLowerline = line.new(x1 = lastdailyStart, y1 = lastWeeklyLower, x2 = right_bar, y2 = lastWeeklyLower, color = lastWeeklyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var lastWeeklyLowerlabel = label.new(right_bar, y = lastWeeklyLower, text = 'pwVWAP -1', tooltip = str.tostring(lastWeeklyLower, format_level), color = label_color_setting, textcolor = lastWeeklyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablelastWeeklyUpper
+        var lastWeeklyUpperline = line.new(x1 = lastdailyStart, y1 = lastWeeklyUpper, x2 = right_bar, y2 = lastWeeklyUpper, color = lastWeeklyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var lastWeeklyUpperlabel = label.new(x = right_bar, y = lastWeeklyUpper, text = 'pwVWAP +1', tooltip = str.tostring(lastWeeklyUpper, format_level), color = label_color_setting, textcolor = lastWeeklyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablelastWeeklyPOC
+        var lastWeeklyPOCline = line.new(x1 = lastdailyStart, x2 = right_bar, y1 = lastWeeklyPOC, y2 = lastWeeklyPOC, color = lastWeeklyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var lastWeeklyPOClabel = label.new(x = right_bar, y = lastWeeklyPOC, text = 'pwVWAP', tooltip = str.tostring(lastWeeklyPOC, format_level), color = label_color_setting, textcolor = lastWeeklyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablelastlastWeeklyLower
+        var lastlastWeeklyLowerline = line.new(x1 = lastdailyStart, y1 = lastlastWeeklyLower, x2 = right_bar, y2 = lastlastWeeklyLower, color = lastlastWeeklyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var lastlastWeeklyLowerlabel = label.new(x = right_bar, y = lastlastWeeklyLower, text = 'ppwVWAP -1', tooltip = str.tostring(lastlastWeeklyLower, format_level), color = label_color_setting, textcolor = lastlastWeeklyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablelastlastWeeklyUpper
+        var lastlastWeeklyUpperline = line.new(x1 = lastdailyStart, y1 = lastlastWeeklyUpper, x2 = right_bar, y2 = lastlastWeeklyUpper, color = lastlastWeeklyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var lastlastWeeklyUpperlabel = label.new(x = right_bar, y = lastlastWeeklyUpper, text = 'ppwVWAP +1', tooltip = str.tostring(lastlastWeeklyUpper, format_level), color = label_color_setting, textcolor = lastlastWeeklyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablelastlastWeeklyPOC
+        var lastlastWeeklyPOCline = line.new(x1 = lastdailyStart, y1 = lastlastWeeklyPOC, x2 = right_bar, y2 = lastlastWeeklyPOC, color = lastlastWeeklyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var lastlastWeeklyPOClabel = label.new(x = right_bar, y = lastlastWeeklyPOC, text = 'ppwVWAP', tooltip = str.tostring(lastlastWeeklyPOC, format_level), color = label_color_setting, textcolor = lastlastWeeklyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablecurrentWeeklyLower
+        var currentWeeklyLowerline = line.new(x1 = lastdailyStart, x2 = right_bar, y1 = weeklyLower, y2 = weeklyLower, color = currentWeeklyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var currentWeeklyLowerlabel = label.new(x = right_bar, y = weeklyLower, text = 'wVWAP -1', tooltip = str.tostring(weeklyLower, format_level), color = label_color_setting, textcolor = currentWeeklyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablecurrentWeeklyPOC
+        var currentWeeklyPOCline = line.new(x1 = lastdailyStart, x2 = right_bar, y1 = weeklyVWAP, y2 = weeklyVWAP, color = currentWeeklyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var currentWeeklyPOClabel = label.new(x = right_bar, y = weeklyVWAP, text = 'wVWAP', tooltip = str.tostring(weeklyVWAP, format_level), color = label_color_setting, textcolor = currentWeeklyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablecurrentWeeklyUpper
+        var currentWeeklyUpperline = line.new(x1 = lastdailyStart, x2 = right_bar, y1 = weeklyUpper, y2 = weeklyUpper, color = currentWeeklyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var currentWeeklyUpperlabel = label.new(x = right_bar, y = weeklyUpper, text = 'wVWAP +1', tooltip = str.tostring(weeklyUpper, format_level), color = label_color_setting, textcolor = currentWeeklyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    // Monthly
+    if enablelastMonthlyLower
+        var lastMonthlyLowerline = line.new(x1 = lastdailyStart, x2 = right_bar, y1 = lastMonthlyLower, y2 = lastMonthlyLower, color = lastMonthlyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var lastMonthlyLowerlabel = label.new(x = right_bar, y = lastMonthlyLower, text = 'pmVWAP -1', tooltip = str.tostring(lastMonthlyLower, format_level), color = label_color_setting, textcolor = lastMonthlyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablelastMonthlyUpper
+        var lastMonthlyUpperline = line.new(x1 = lastdailyStart, x2 = right_bar, y1 = lastMonthlyUpper, y2 = lastMonthlyUpper, color = lastMonthlyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var lastMonthlyUpperlabel = label.new(x = right_bar, y = lastMonthlyUpper, text = 'pmVWAP +1', tooltip = str.tostring(lastMonthlyUpper, format_level), color = label_color_setting, textcolor = lastMonthlyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablelastMonthlyPOC
+        var lastMonthlyPOCline = line.new(x1 = lastdailyStart, x2 = right_bar, y1 = lastMonthlyPOC, y2 = lastMonthlyPOC, color = lastMonthlyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var lastMonthlyPOClabel = label.new(x = right_bar, y = lastMonthlyPOC, text = 'pmVWAP', tooltip = str.tostring(lastMonthlyPOC, format_level), color = label_color_setting, textcolor = lastMonthlyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablelastlastMonthlyLower
+        var lastlastMonthlyLowerline = line.new(x1 = lastdailyStart, y1 = lastlastMonthlyLower, x2 = right_bar, y2 = lastlastMonthlyLower, color = lastlastMonthlyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var lastlastMonthlyLowerlabel = label.new(x = right_bar, y = lastlastMonthlyLower, text = 'ppmVWAP -1', tooltip = str.tostring(lastlastMonthlyLower, format_level), color = label_color_setting, textcolor = lastlastMonthlyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablelastlastMonthlyUpper
+        var lastlastMonthlyUpperline = line.new(x1 = lastdailyStart, y1 = lastlastMonthlyUpper, x2 = right_bar, y2 = lastlastMonthlyUpper, color = lastlastMonthlyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var lastlastMonthlyUpperlabel = label.new(x = right_bar, y = lastlastMonthlyUpper, text = 'ppmVWAP +1', tooltip = str.tostring(lastlastMonthlyUpper, format_level), color = label_color_setting, textcolor = lastlastMonthlyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablelastlastMonthlyPOC
+        var lastlastMonthlyPOCline = line.new(x1 = lastdailyStart, y1 = lastlastMonthlyPOC, x2 = right_bar, y2 = lastlastMonthlyPOC, color = lastlastMonthlyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var lastlastMonthlyPOClabel = label.new(x = right_bar, y = lastlastMonthlyPOC, text = 'ppmVWAP', tooltip = str.tostring(lastlastMonthlyPOC, format_level), color = label_color_setting, textcolor = lastlastMonthlyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablecurrentMonthlyLower
+        var currentMonthlyLowerline = line.new(x1 = lastdailyStart, x2 = right_bar, y1 = monthlyLower, y2 = monthlyLower, color = currentMonthlyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var currentMonthlyLowerlabel = label.new(x = right_bar, y = monthlyLower, text = 'mVWAP -1', tooltip = str.tostring(monthlyLower, format_level), color = label_color_setting, textcolor = currentMonthlyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablecurrentMonthlyPOC
+        var currentMonthlyPOCline = line.new(x1 = lastdailyStart, x2 = right_bar, y1 = monthlyVWAP, y2 = monthlyVWAP, color = currentMonthlyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var currentMonthlyPOClabel = label.new(x = right_bar, y = monthlyVWAP, text = 'mVWAP', tooltip = str.tostring(monthlyVWAP, format_level), color = label_color_setting, textcolor = currentMonthlyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablecurrentMonthlyUpper
+        var currentMonthlyUpperline = line.new(x1 = lastdailyStart, x2 = right_bar, y1 = monthlyUpper, y2 = monthlyUpper, color = currentMonthlyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var currentMonthlyUpperlabel = label.new(x = right_bar, y = monthlyUpper, text = 'mVWAP +1', tooltip = str.tostring(monthlyUpper, format_level), color = label_color_setting, textcolor = currentMonthlyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    // QUATERLY
+    if enablelastQuarterlyLower
+        var lastQuarterlyLowerline = line.new(x1 = lastdailyStart, x2 = right_bar, y1 = lastQuarterlyLower, y2 = lastQuarterlyLower, color = lastQuarterlyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var lastQuarterlyLowerlabel = label.new(x = right_bar, y = lastQuarterlyLower, text = 'pqVWAP -1', tooltip = str.tostring(lastQuarterlyLower, format_level), color = label_color_setting, textcolor = lastQuarterlyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablelastQuarterlyUpper
+        var lastQuarterlyUpperline = line.new(x1 = lastdailyStart, x2 = right_bar, y1 = lastQuarterlyUpper, y2 = lastQuarterlyUpper, color = lastQuarterlyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var lastQuarterlyUpperlabel = label.new(x = right_bar, y = lastQuarterlyUpper, text = 'pqVWAP +1', tooltip = str.tostring(lastQuarterlyUpper, format_level), color = label_color_setting, textcolor = lastQuarterlyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablelastQuarterlyPOC
+        var lastQuarterlyPOCline = line.new(x1 = lastdailyStart, x2 = right_bar, y1 = lastQuarterlyPOC, y2 = lastQuarterlyPOC, color = lastQuarterlyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var lastQuarterlyPOClabel = label.new(x = right_bar, y = lastQuarterlyPOC, text = 'pqVWAP', tooltip = str.tostring(lastQuarterlyPOC, format_level), color = label_color_setting, textcolor = lastQuarterlyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablelastlastQuarterlyLower
+        var lastlastQuarterlyLowerline = line.new(x1 = lastdailyStart, x2 = right_bar, y1 = lastlastQuarterlyLower, y2 = lastlastQuarterlyLower, color = lastlastQuarterlyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var lastlastQuarterlyLowerlabel = label.new(x = right_bar, y = lastlastQuarterlyLower, text = 'ppqVWAP -1', tooltip = str.tostring(lastlastQuarterlyLower, format_level), color = label_color_setting, textcolor = lastlastQuarterlyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablelastlastQuarterlyUpper
+        var lastlastQuarterlyUpperline = line.new(x1 = lastdailyStart, x2 = right_bar, y1 = lastlastQuarterlyUpper, y2 = lastlastQuarterlyUpper, color = lastlastQuarterlyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var lastlastQuarterlyUpperlabel = label.new(x = right_bar, y = lastlastQuarterlyUpper, text = 'ppqVWAP +1', tooltip = str.tostring(lastlastQuarterlyUpper, format_level), color = label_color_setting, textcolor = lastlastQuarterlyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablelastlastQuarterlyPOC
+        var lastlastQuarterlyPOCline = line.new(x1 = lastdailyStart, x2 = right_bar, y1 = lastlastQuarterlyPOC, y2 = lastlastQuarterlyPOC, color = lastlastQuarterlyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var lastlastQuarterlyPOClabel = label.new(x = right_bar, y = lastlastQuarterlyPOC, text = 'ppqVWAP', tooltip = str.tostring(lastlastQuarterlyPOC, format_level), color = label_color_setting, textcolor = lastlastQuarterlyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablecurrentQuarterlyLower
+        var currentQuarterlyLowerline = line.new(x1 = lastdailyStart, x2 = right_bar, y1 = quarterlyLower, y2 = quarterlyLower, color = currentQuarterlyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var currentQuarterlyLowerlabel = label.new(x = right_bar, y = quarterlyLower, text = 'qVWAP -1', tooltip = str.tostring(quarterlyLower, format_level), color = label_color_setting, textcolor = currentQuarterlyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablecurrentQuarterlyPOC
+        var currentQuarterlyPOCline = line.new(x1 = lastdailyStart, x2 = right_bar, y1 = quarterlyVWAP, y2 = quarterlyVWAP, color = currentQuarterlyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var currentQuarterlyPOClabel = label.new(x = right_bar, y = quarterlyVWAP, text = 'qVWAP', tooltip = str.tostring(quarterlyVWAP, format_level), color = label_color_setting, textcolor = currentQuarterlyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablecurrentQuarterlyUpper
+        var currentQuarterlyUpperline = line.new(x1 = lastdailyStart, x2 = right_bar, y1 = quarterlyUpper, y2 = quarterlyUpper, color = currentQuarterlyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var currentQuarterlyUpperlabel = label.new(x = right_bar, y = quarterlyUpper, text = 'qVWAP +1', tooltip = str.tostring(quarterlyUpper, format_level), color = label_color_setting, textcolor = currentQuarterlyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    // Yearly
+    if enablecurrentyearlyLower
+        var currentyearlyLowerline = line.new(x1 = lastdailyStart, y1 = yearlyLower, x2 = right_bar, y2 = yearlyLower, color = currentyearlyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var currentyearlyLowerlabel = label.new(x = right_bar, y = yearlyLower, text = 'yVWAP -1', tooltip = str.tostring(yearlyLower, format_level), color = label_color_setting, textcolor = currentyearlyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablecurrentyearlyPOC
+        var currentyearlyPOCline = line.new(x1 = lastdailyStart, y1 = yearlyVWAP, x2 = right_bar, y2 = yearlyVWAP, color = currentyearlyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var currentyearlyPOClabel = label.new(x = right_bar, y = yearlyVWAP, text = 'yVWAP', tooltip = str.tostring(yearlyVWAP, format_level), color = label_color_setting, textcolor = currentyearlyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablecurrentyearlyUpper
+        var currentyearlyUpperline = line.new(x1 = lastdailyStart, y1 = yearlyUpper, x2 = right_bar, y2 = yearlyUpper, color = currentyearlyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var currentyearlyUpperlabel = label.new(x = right_bar, y = yearlyUpper, text = 'yVWAP +1', tooltip = str.tostring(yearlyUpper, format_level), color = label_color_setting, textcolor = currentyearlyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    
