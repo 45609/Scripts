@@ -1,3 +1,6 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © Edward
+
 //@version=6
 indicator(title = '✘', shorttitle = '✘', overlay = true, max_bars_back = 5000, max_polylines_count = 100, max_boxes_count = 500, max_labels_count = 500, max_lines_count = 500)
 
