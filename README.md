@@ -8,6 +8,6 @@ Buy me a coffee
 
  Ton:     **UQDGgsmrurkdGjpBAZ07tW7VyyTqRpP27soXWQFXm7ltVDlQ**
  
- 
-![](https://cdn.discordapp.com/attachments/1296750081613107286/1327222436428775476/IMG_0363.jpg?ex=678247b7&is=6780f637&hm=7076b17e427b0293484a96d2aad68d03074b8b47765d2f5d9c8f9730e18030b6&)
+
+<img src="https://cdn.discordapp.com/attachments/1296750081613107286/1327226270496591954/IMG_0363.jpg?ex=67824b49&is=6780f9c9&hm=7d627d391175891163957b34e445a979c7572c8f545949664d33b514f192109e&" width="450px">
 
