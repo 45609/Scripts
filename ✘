@@ -34,22 +34,6 @@ VWAP4_Col = input.color(defval = color.rgb(255, 255, 255, 60), title = 'VWAP', g
 Bands4_Col = input.color(defval = color.rgb(255, 255, 255, 60), title = 'Bands', group = VWAP_Ctl, inline = VWAP4_Settings)
 VWAP4_Bgc = input.color(defval = color.rgb(255, 255, 255, 95), title = 'Fill', group = VWAP_Ctl, inline = VWAP4_Settings)
 
-Multiplier = 'Multiplier For VWAP #2'
-MultiplierX = 'MultiplierX'
-MultiplierY = 'MultiplierY'
-MultA_Ctl = input(true, title = '', group = Multiplier, inline = MultiplierX, display = display.data_window)
-MultA_Val = input.float(1.5, step = 0.5, minval = 0, title = '', group = Multiplier, inline = MultiplierX, display = display.data_window)
-MultA_Bgc = input.color(defval = color.rgb(91, 156, 246, 95), title = '', group = Multiplier, inline = MultiplierX)
-MultB_Ctl = input(true, title = '', group = Multiplier, inline = MultiplierX, display = display.data_window)
-MultB_Val = input.float(2.0, step = 0.5, minval = 0, title = '', group = Multiplier, inline = MultiplierX, display = display.data_window)
-MultB_Bgc = input.color(defval = color.rgb(91, 156, 246, 100), title = '', group = Multiplier, inline = MultiplierX)
-MultC_Ctl = input(true, title = '', group = Multiplier, inline = MultiplierY, display = display.data_window)
-MultC_Val = input.float(2.5, step = 0.5, minval = 0, title = '', group = Multiplier, inline = MultiplierY, display = display.data_window)
-MultC_Bgc = input.color(defval = color.rgb(91, 156, 246, 95), title = '', group = Multiplier, inline = MultiplierY)
-MultD_Ctl = input(false, title = '', group = Multiplier, inline = MultiplierY, display = display.data_window)
-MultD_Val = input.float(3.0, step = 0.5, minval = 0, title = '', group = Multiplier, inline = MultiplierY, display = display.data_window)
-MultD_Bgc = input.color(defval = color.rgb(91, 156, 246, 95), title = '', group = Multiplier, inline = MultiplierY)
-
 Src = hlc3
 
 // Function to calculate new period
@@ -63,18 +47,10 @@ f_is_new_period(anchor) =>
         => false
 
 // Function to calculate VWAP and Bands
-f_calculate_vwap(src, is_active, is_new_period, multa, multb, multc, multd, multa_ctl, multb_ctl, multc_ctl, multd_ctl) =>
+f_calculate_vwap(src, is_active, is_new_period) =>
     var float vwap = na
     var float band_upper = na
     var float band_lower = na
-    var float multa_upper = na
-    var float multa_lower = na
-    var float multb_upper = na
-    var float multb_lower = na
-    var float multc_upper = na
-    var float multc_lower = na
-    var float multd_upper = na
-    var float multd_lower = na
 
     if is_active and not timeframe.isdwm
         [_vwap, _stdev_upper, _] = ta.vwap(src, is_new_period, 1)
@@ -82,23 +58,15 @@ f_calculate_vwap(src, is_active, is_new_period, multa, multb, multc, multd, mult
         vwap := _vwap
         band_upper := vwap + stdev_abs
         band_lower := vwap - stdev_abs
-        multa_upper := multa_ctl ? vwap + stdev_abs * multa : na
-        multa_lower := multa_ctl ? vwap - stdev_abs * multa : na
-        multb_upper := multb_ctl ? vwap + stdev_abs * multb : na
-        multb_lower := multb_ctl ? vwap - stdev_abs * multb : na
-        multc_upper := multc_ctl ? vwap + stdev_abs * multc : na
-        multc_lower := multc_ctl ? vwap - stdev_abs * multc : na
-        multd_upper := multd_ctl ? vwap + stdev_abs * multd : na
-        multd_lower := multd_ctl ? vwap - stdev_abs * multd : na
 
-    [vwap, band_upper, band_lower, multa_upper, multa_lower, multb_upper, multb_lower, multc_upper, multc_lower, multd_upper, multd_lower]
+    [vwap, band_upper, band_lower]
 
 
 // VWAP Calculations
-[vwap1, band1_upper, band1_lower, multa1_upper, multa1_lower, multb1_upper, multb1_lower, multc1_upper, multc1_lower, multd1_upper, multd1_lower] = f_calculate_vwap(Src, VWAP1_Ctl, f_is_new_period(Anchor1), MultA_Val, MultB_Val, MultC_Val, MultD_Val, MultA_Ctl, MultB_Ctl, MultC_Ctl, MultD_Ctl)
-[vwap2, band2_upper, band2_lower, multa2_upper, multa2_lower, multb2_upper, multb2_lower, multc2_upper, multc2_lower, multd2_upper, multd2_lower] = f_calculate_vwap(Src, VWAP2_Ctl, f_is_new_period(Anchor2), MultA_Val, MultB_Val, MultC_Val, MultD_Val, MultA_Ctl, MultB_Ctl, MultC_Ctl, MultD_Ctl)
-[vwap3, band3_upper, band3_lower, multa3_upper, multa3_lower, multb3_upper, multb3_lower, multc3_upper, multc3_lower, multd3_upper, multd3_lower] = f_calculate_vwap(Src, VWAP3_Ctl, f_is_new_period(Anchor3), MultA_Val, MultB_Val, MultC_Val, MultD_Val, MultA_Ctl, MultB_Ctl, MultC_Ctl, MultD_Ctl)
-[vwap4, band4_upper, band4_lower, multa4_upper, multa4_lower, multb4_upper, multb4_lower, multc4_upper, multc4_lower, multd4_upper, multd4_lower] = f_calculate_vwap(Src, VWAP4_Ctl, f_is_new_period(Anchor4), MultA_Val, MultB_Val, MultC_Val, MultD_Val, MultA_Ctl, MultB_Ctl, MultC_Ctl, MultD_Ctl)
+[vwap1, band1_upper, band1_lower, multa1_upper] = f_calculate_vwap(Src, VWAP1_Ctl, f_is_new_period(Anchor1))
+[vwap2, band2_upper, band2_lower, multa2_upper] = f_calculate_vwap(Src, VWAP2_Ctl, f_is_new_period(Anchor2))
+[vwap3, band3_upper, band3_lower, multa3_upper] = f_calculate_vwap(Src, VWAP3_Ctl, f_is_new_period(Anchor3))
+[vwap4, band4_upper, band4_lower, multa4_upper] = f_calculate_vwap(Src, VWAP4_Ctl, f_is_new_period(Anchor4))
 
 // Plot VWAP and Bands
 vwap_plot1 = plot(VWAP1_Ctl ? vwap1 : na, color=VWAP1_Col)
@@ -120,30 +88,6 @@ vwap_plot4 = plot(VWAP4_Ctl ? vwap4 : na, color=VWAP4_Col)
 lowerBand_4 = plot(VWAP4_Ctl ? band4_lower : na, color=Bands4_Col)
 upperBand_4 = plot(VWAP4_Ctl ? band4_upper : na, color=Bands4_Col)
 fill(upperBand_4, lowerBand_4, color=VWAP4_Bgc)
-
-// Plot MultA Bands and Fill
-multa_lower_2_plot = plot(VWAP2_Ctl and MultA_Ctl ? multa2_lower : na, color=MultA_Bgc)
-multa_upper_2_plot = plot(VWAP2_Ctl and MultA_Ctl ? multa2_upper : na, color=MultA_Bgc)
-fill(upperBand_2, multa_upper_2_plot, color=MultA_Bgc)
-fill(lowerBand_2, multa_lower_2_plot, color=MultA_Bgc)
-
-// Plot MultB Bands and Fill
-multb_lower_2_plot = plot(VWAP2_Ctl and MultB_Ctl ? multb2_lower : na, color=MultB_Bgc)
-multb_upper_2_plot = plot(VWAP2_Ctl and MultB_Ctl ? multb2_upper : na, color=MultB_Bgc)
-fill(multa_upper_2_plot, multb_upper_2_plot, color=MultB_Bgc)
-fill(multa_lower_2_plot, multb_lower_2_plot, color=MultB_Bgc)
-
-// Plot MultC Bands and Fill
-multc_lower_2_plot = plot(VWAP2_Ctl and MultC_Ctl ? multc2_lower : na, color=MultC_Bgc)
-multc_upper_2_plot = plot(VWAP2_Ctl and MultC_Ctl ? multc2_upper : na, color=MultC_Bgc)
-fill(multb_upper_2_plot, multc_upper_2_plot, color=MultC_Bgc)
-fill(multb_lower_2_plot, multc_lower_2_plot, color=MultC_Bgc)
-
-// Plot MultD Bands and Fill
-multd_lower_2_plot = plot(VWAP2_Ctl and MultD_Ctl ? multd2_lower : na, color=MultD_Bgc)
-multd_upper_2_plot = plot(VWAP2_Ctl and MultD_Ctl ? multd2_upper : na, color=MultD_Bgc)
-fill(multc_upper_2_plot, multd_upper_2_plot, color=MultD_Bgc)
-fill(multc_lower_2_plot, multd_lower_2_plot, color=MultD_Bgc)
 
 // Stocks Markets Sessions
 YourTZ = input.string('UTC+8:00', 'Time Zone', group = 'Basic Setting')
