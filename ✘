@@ -435,6 +435,16 @@ var bool enablecurrentyearlyLower = input.bool(false, title = 'Lower', group = V
 var bool enablecurrentyearlyPOC = input.bool(false, title = 'VWAP', group = VWAP_Grp, inline = 'yearly3')
 var bool enablecurrentyearlyUpper = input.bool(false, title = 'Upper', group = VWAP_Grp, inline = 'yearly3')
 
+var float lastYearlyLower = na
+var float lastYearlyUpper = na
+var int lastYearlyStart = na
+var float lastYearlyPOC = na
+lastYearlyColor = input.color(title = '', defval = color.rgb(240, 98, 146, 20), group = VWAP_Grp, inline = 'yearly1')
+lastYearly = input.string(defval = '↳', title = '', group = VWAP_Grp, inline = 'yearly1', options = ['↳'])
+var bool enablelastYearlyLower = input.bool(false, title = 'Lower', group = VWAP_Grp, inline = 'yearly1')
+var bool enablelastYearlyPOC = input.bool(false, title = 'VWAP', group = VWAP_Grp, inline = 'yearly1')
+var bool enablelastYearlyUpper = input.bool(false, title = 'Upper', group = VWAP_Grp, inline = 'yearly1')
+
 label_color_setting = color.new(#ecf008, 100)
 right_bar = bar_index + Offset
 format_level = '#.####'
@@ -493,6 +503,13 @@ if timeframe.change('D')
     lastdailyStart := bar_index[1]
     lastdailyPOC := dailyVWAP[1]
     lastdailyPOC
+
+if timeframe.change("12M")
+    lastYearlyLower := yearlyLower[1]
+    lastYearlyUpper := yearlyUpper[1]
+    lastYearlyPOC :=  yearlyVWAP[1]
+    lastYearlyStart := bar_index[1]
+    lastYearlyStart
 
 if barstate.islast
     // Daily
@@ -608,4 +625,13 @@ if barstate.islast
     if enablecurrentyearlyUpper
         var currentyearlyUpperline = line.new(x1 = lastdailyStart, y1 = yearlyUpper, x2 = right_bar, y2 = yearlyUpper, color = currentyearlyColor, width = 1, style = DEFAULT_LINE_STYLE)
         var currentyearlyUpperlabel = label.new(x = right_bar, y = yearlyUpper, text = 'yVWAP +1', tooltip = str.tostring(yearlyUpper, format_level), color = label_color_setting, textcolor = currentyearlyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablelastYearlyLower
+        var currentyearlyLowerline = line.new(x1 = lastdailyStart, y1 = lastYearlyLower, x2 = right_bar, y2 = lastYearlyLower, color = lastYearlyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var currentyearlyLowerlabel = label.new(x = right_bar, y = lastYearlyLower, text = 'pyVWAP -1', tooltip = str.tostring(lastYearlyLower, format_level), color = label_color_setting, textcolor = lastYearlyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablelastYearlyPOC
+        var currentyearlyPOCline = line.new(x1 = lastdailyStart, y1 = lastYearlyPOC, x2 = right_bar, y2 = lastYearlyPOC, color = lastYearlyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var currentyearlyPOClabel = label.new(x = right_bar, y = lastYearlyPOC, text = 'pyVWAP', tooltip = str.tostring(lastYearlyPOC, format_level), color = label_color_setting, textcolor = lastYearlyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+    if enablelastYearlyUpper
+        var currentyearlyUpperline = line.new(x1 = lastdailyStart, y1 = lastYearlyUpper, x2 = right_bar, y2 = lastYearlyUpper, color = lastYearlyColor, width = 1, style = DEFAULT_LINE_STYLE)
+        var currentyearlyUpperlabel = label.new(x = right_bar, y = lastYearlyUpper, text = 'pyVWAP +1', tooltip = str.tostring(lastYearlyUpper, format_level), color = label_color_setting, textcolor = lastYearlyColor, style = DEFAULT_LABEL_STYLE, xloc = xloc.bar_index, text_font_family = font.family_monospace)
     
