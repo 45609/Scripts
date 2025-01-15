@@ -1,6 +1,3 @@
-// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
-// © Edward
-
 //@version=6
 indicator(title = '✘', shorttitle = '✘', overlay = true, max_bars_back = 5000, max_polylines_count = 100, max_boxes_count = 500, max_labels_count = 500, max_lines_count = 500)
 
@@ -17,9 +14,9 @@ VWAP1_Bgc = input.color(defval = color.rgb(255, 183, 77, 95), title = 'Fill', gr
 VWAP2_Settings = 'VWAP #2 Settings'
 VWAP2_Ctl = input(false, title = '', group = VWAP_Ctl, inline = VWAP2_Settings, display = display.data_window)
 Anchor2 = input.string(defval = 'Month', title = '', group = VWAP_Ctl, inline = VWAP2_Settings, options = ['Day', 'Week', 'Month', 'Quarter', 'Year'])
-VWAP2_Col = input.color(defval = color.rgb(240, 98, 146, 60), title = 'VWAP', group = VWAP_Ctl, inline = VWAP2_Settings)
-Bands2_Col = input.color(defval = color.rgb(240, 98, 146, 60), title = 'Bands', group = VWAP_Ctl, inline = VWAP2_Settings)
-VWAP2_Bgc = input.color(defval = color.rgb(240, 98, 146, 95), title = 'Fill', group = VWAP_Ctl, inline = VWAP2_Settings)
+VWAP2_Col = input.color(defval = color.rgb(91, 156, 246, 60), title = 'VWAP', group = VWAP_Ctl, inline = VWAP2_Settings)
+Bands2_Col = input.color(defval = color.rgb(91, 156, 246, 60), title = 'Bands', group = VWAP_Ctl, inline = VWAP2_Settings)
+VWAP2_Bgc = input.color(defval = color.rgb(91, 156, 246, 95), title = 'Fill', group = VWAP_Ctl, inline = VWAP2_Settings)
 
 // VWAP #3 Settings
 VWAP3_Settings = 'VWAP #3 Settings'
@@ -37,125 +34,121 @@ VWAP4_Col = input.color(defval = color.rgb(255, 255, 255, 60), title = 'VWAP', g
 Bands4_Col = input.color(defval = color.rgb(255, 255, 255, 60), title = 'Bands', group = VWAP_Ctl, inline = VWAP4_Settings)
 VWAP4_Bgc = input.color(defval = color.rgb(255, 255, 255, 95), title = 'Fill', group = VWAP_Ctl, inline = VWAP4_Settings)
 
+Multiplier = 'Multiplier For VWAP #2'
+MultiplierX = 'MultiplierX'
+MultiplierY = 'MultiplierY'
+MultA_Ctl = input(true, title = '', group = Multiplier, inline = MultiplierX, display = display.data_window)
+MultA_Val = input.float(1.5, step = 0.5, minval = 0, title = '', group = Multiplier, inline = MultiplierX, display = display.data_window)
+MultA_Bgc = input.color(defval = color.rgb(91, 156, 246, 95), title = '', group = Multiplier, inline = MultiplierX)
+MultB_Ctl = input(true, title = '', group = Multiplier, inline = MultiplierX, display = display.data_window)
+MultB_Val = input.float(2.0, step = 0.5, minval = 0, title = '', group = Multiplier, inline = MultiplierX, display = display.data_window)
+MultB_Bgc = input.color(defval = color.rgb(91, 156, 246, 100), title = '', group = Multiplier, inline = MultiplierX)
+MultC_Ctl = input(true, title = '', group = Multiplier, inline = MultiplierY, display = display.data_window)
+MultC_Val = input.float(2.5, step = 0.5, minval = 0, title = '', group = Multiplier, inline = MultiplierY, display = display.data_window)
+MultC_Bgc = input.color(defval = color.rgb(91, 156, 246, 95), title = '', group = Multiplier, inline = MultiplierY)
+MultD_Ctl = input(false, title = '', group = Multiplier, inline = MultiplierY, display = display.data_window)
+MultD_Val = input.float(3.0, step = 0.5, minval = 0, title = '', group = Multiplier, inline = MultiplierY, display = display.data_window)
+MultD_Bgc = input.color(defval = color.rgb(91, 156, 246, 95), title = '', group = Multiplier, inline = MultiplierY)
+
 Src = hlc3
-var pricearray = array.new_float(0)
-var labelarray = array.new_label(0)
-label_color_setting = color.new(#ecf008, 100)
-right_bar = bar_index + 18
-format_level = '#.####'
 
-var DEFAULT_LINE_STYLE = line.style_dotted
-var DEFAULT_LABEL_STYLE = label.style_label_left
-var DEFAULT_EXTEND_RIGHT = 18
+// Function to calculate new period
+f_is_new_period(anchor) =>
+    switch anchor
+        'Day' => timeframe.change('D')
+        'Week' => timeframe.change('W')
+        'Month' => timeframe.change('M')
+        'Quarter' => timeframe.change('3M')
+        'Year' => timeframe.change('12M')
+        => false
 
-isNewQuarter = switch Anchor1
-    'Day' => timeframe.change('D')
-    'Week' => timeframe.change('W')
-    'Month' => timeframe.change('M')
-    'Quarter' => timeframe.change('3M')
-    'Year' => timeframe.change('12M')
-    'Decade' => timeframe.change('12M') and year % 10 == 0
-    'Century' => timeframe.change('12M') and year % 100 == 0
-    => false
+// Function to calculate VWAP and Bands
+f_calculate_vwap(src, is_active, is_new_period, multa, multb, multc, multd, multa_ctl, multb_ctl, multc_ctl, multd_ctl) =>
+    var float vwap = na
+    var float band_upper = na
+    var float band_lower = na
+    var float multa_upper = na
+    var float multa_lower = na
+    var float multb_upper = na
+    var float multb_lower = na
+    var float multc_upper = na
+    var float multc_lower = na
+    var float multd_upper = na
+    var float multd_lower = na
 
-isNewMonth = switch Anchor2
-    'Day' => timeframe.change('D')
-    'Week' => timeframe.change('W')
-    'Month' => timeframe.change('M')
-    'Quarter' => timeframe.change('3M')
-    'Year' => timeframe.change('12M')
-    'Decade' => timeframe.change('12M') and year % 10 == 0
-    'Century' => timeframe.change('12M') and year % 100 == 0
-    => false
+    if is_active and not timeframe.isdwm
+        [_vwap, _stdev_upper, _] = ta.vwap(src, is_new_period, 1)
+        stdev_abs = _stdev_upper - _vwap
+        vwap := _vwap
+        band_upper := vwap + stdev_abs
+        band_lower := vwap - stdev_abs
+        multa_upper := multa_ctl ? vwap + stdev_abs * multa : na
+        multa_lower := multa_ctl ? vwap - stdev_abs * multa : na
+        multb_upper := multb_ctl ? vwap + stdev_abs * multb : na
+        multb_lower := multb_ctl ? vwap - stdev_abs * multb : na
+        multc_upper := multc_ctl ? vwap + stdev_abs * multc : na
+        multc_lower := multc_ctl ? vwap - stdev_abs * multc : na
+        multd_upper := multd_ctl ? vwap + stdev_abs * multd : na
+        multd_lower := multd_ctl ? vwap - stdev_abs * multd : na
 
-isNewWeek = switch Anchor3
-    'Day' => timeframe.change('D')
-    'Week' => timeframe.change('W')
-    'Month' => timeframe.change('M')
-    'Quarter' => timeframe.change('3M')
-    'Year' => timeframe.change('12M')
-    'Decade' => timeframe.change('12M') and year % 10 == 0
-    'Century' => timeframe.change('12M') and year % 100 == 0
-    => false
+    [vwap, band_upper, band_lower, multa_upper, multa_lower, multb_upper, multb_lower, multc_upper, multc_lower, multd_upper, multd_lower]
 
-isNewDay = switch Anchor4
-    'Day' => timeframe.change('D')
-    'Week' => timeframe.change('W')
-    'Month' => timeframe.change('M')
-    'Quarter' => timeframe.change('3M')
-    'Year' => timeframe.change('12M')
-    'Decade' => timeframe.change('12M') and year % 10 == 0
-    'Century' => timeframe.change('12M') and year % 100 == 0
-    => false
 
-float Vwap1 = na
-float Band1_Upper = na
-float Band1_Lower = na
-float Vwap2 = na
-float Band2_Upper = na
-float Band2_Lower = na
-float Vwap3 = na
-float Band3_Upper = na
-float Band3_Lower = na
-float Vwap4 = na
-float Band4_Upper = na
-float Band4_Lower = na
+// VWAP Calculations
+[vwap1, band1_upper, band1_lower, multa1_upper, multa1_lower, multb1_upper, multb1_lower, multc1_upper, multc1_lower, multd1_upper, multd1_lower] = f_calculate_vwap(Src, VWAP1_Ctl, f_is_new_period(Anchor1), MultA_Val, MultB_Val, MultC_Val, MultD_Val, MultA_Ctl, MultB_Ctl, MultC_Ctl, MultD_Ctl)
+[vwap2, band2_upper, band2_lower, multa2_upper, multa2_lower, multb2_upper, multb2_lower, multc2_upper, multc2_lower, multd2_upper, multd2_lower] = f_calculate_vwap(Src, VWAP2_Ctl, f_is_new_period(Anchor2), MultA_Val, MultB_Val, MultC_Val, MultD_Val, MultA_Ctl, MultB_Ctl, MultC_Ctl, MultD_Ctl)
+[vwap3, band3_upper, band3_lower, multa3_upper, multa3_lower, multb3_upper, multb3_lower, multc3_upper, multc3_lower, multd3_upper, multd3_lower] = f_calculate_vwap(Src, VWAP3_Ctl, f_is_new_period(Anchor3), MultA_Val, MultB_Val, MultC_Val, MultD_Val, MultA_Ctl, MultB_Ctl, MultC_Ctl, MultD_Ctl)
+[vwap4, band4_upper, band4_lower, multa4_upper, multa4_lower, multb4_upper, multb4_lower, multc4_upper, multc4_lower, multd4_upper, multd4_lower] = f_calculate_vwap(Src, VWAP4_Ctl, f_is_new_period(Anchor4), MultA_Val, MultB_Val, MultC_Val, MultD_Val, MultA_Ctl, MultB_Ctl, MultC_Ctl, MultD_Ctl)
 
-if not timeframe.isdwm
-    [_vwap1, _stdevUpper, _] = ta.vwap(Src, isNewQuarter, 1)
-    Vwap1 := _vwap1
-    stdevAbs = _stdevUpper - _vwap1
-    Band1_Upper := _vwap1 + stdevAbs * 1.0
-    Band1_Lower := _vwap1 - stdevAbs * 1.0
-    Band1_Lower
+// Plot VWAP and Bands
+vwap_plot1 = plot(VWAP1_Ctl ? vwap1 : na, color=VWAP1_Col)
+lowerBand_1 = plot(VWAP1_Ctl ? band1_lower : na, color=Bands1_Col)
+upperBand_1 = plot(VWAP1_Ctl ? band1_upper : na, color=Bands1_Col)
+fill(upperBand_1, lowerBand_1, color=VWAP1_Bgc)
 
-if not timeframe.isdwm
-    [_vwap2, _stdevUpper, _] = ta.vwap(Src, isNewMonth, 1)
-    Vwap2 := _vwap2
-    stdevAbs = _stdevUpper - _vwap2
-    Band2_Upper := _vwap2 + stdevAbs * 1.0
-    Band2_Lower := _vwap2 - stdevAbs * 1.0
-    Band2_Lower
+vwap_plot2 = plot(VWAP2_Ctl ? vwap2 : na, color=VWAP2_Col)
+lowerBand_2 = plot(VWAP2_Ctl ? band2_lower : na, color=Bands2_Col)
+upperBand_2 = plot(VWAP2_Ctl ? band2_upper : na, color=Bands2_Col)
+fill(upperBand_2, lowerBand_2, color=VWAP2_Bgc)
 
-if not timeframe.isdwm
-    [_vwap3, _stdevUpper, _] = ta.vwap(Src, isNewWeek, 1)
-    Vwap3 := _vwap3
-    stdevAbs = _stdevUpper - _vwap3
-    Band3_Upper := _vwap3 + stdevAbs * 1.0
-    Band3_Lower := _vwap3 - stdevAbs * 1.0
-    Band3_Lower
+vwap_plot3 = plot(VWAP3_Ctl ? vwap3 : na, color=VWAP3_Col)
+lowerBand_3 = plot(VWAP3_Ctl ? band3_lower : na, color=Bands3_Col)
+upperBand_3 = plot(VWAP3_Ctl ? band3_upper : na, color=Bands3_Col)
+fill(upperBand_3, lowerBand_3, color=VWAP3_Bgc)
 
-if not timeframe.isdwm
-    [_vwap4, _stdevUpper, _] = ta.vwap(Src, isNewDay, 1)
-    Vwap4 := _vwap4
-    stdevAbs = _stdevUpper - _vwap4
-    Band4_Upper := _vwap4 + stdevAbs * 1.0
-    Band4_Lower := _vwap4 - stdevAbs * 1.0
-    Band4_Lower
+vwap_plot4 = plot(VWAP4_Ctl ? vwap4 : na, color=VWAP4_Col)
+lowerBand_4 = plot(VWAP4_Ctl ? band4_lower : na, color=Bands4_Col)
+upperBand_4 = plot(VWAP4_Ctl ? band4_upper : na, color=Bands4_Col)
+fill(upperBand_4, lowerBand_4, color=VWAP4_Bgc)
 
-vwap_plot1 = plot(VWAP1_Ctl ? Vwap1 : na, color = VWAP1_Col)
-lowerBand_1 = plot(VWAP1_Ctl ? Band1_Lower : na, color = Bands1_Col)
-upperBand_1 = plot(VWAP1_Ctl ? Band1_Upper : na, color = Bands1_Col)
-fill(upperBand_1, lowerBand_1, color = VWAP1_Bgc)
+// Plot MultA Bands and Fill
+multa_lower_2_plot = plot(VWAP2_Ctl and MultA_Ctl ? multa2_lower : na, color=MultA_Bgc)
+multa_upper_2_plot = plot(VWAP2_Ctl and MultA_Ctl ? multa2_upper : na, color=MultA_Bgc)
+fill(upperBand_2, multa_upper_2_plot, color=MultA_Bgc)
+fill(lowerBand_2, multa_lower_2_plot, color=MultA_Bgc)
 
-vwap_plot2 = plot(VWAP2_Ctl ? Vwap2 : na, color = VWAP2_Col)
-lowerBand_2 = plot(VWAP2_Ctl ? Band2_Lower : na, color = Bands2_Col)
-upperBand_2 = plot(VWAP2_Ctl ? Band2_Upper : na, color = Bands2_Col)
-fill(upperBand_2, lowerBand_2, color = VWAP2_Bgc)
+// Plot MultB Bands and Fill
+multb_lower_2_plot = plot(VWAP2_Ctl and MultB_Ctl ? multb2_lower : na, color=MultB_Bgc)
+multb_upper_2_plot = plot(VWAP2_Ctl and MultB_Ctl ? multb2_upper : na, color=MultB_Bgc)
+fill(multa_upper_2_plot, multb_upper_2_plot, color=MultB_Bgc)
+fill(multa_lower_2_plot, multb_lower_2_plot, color=MultB_Bgc)
 
-vwap_plot3 = plot(VWAP3_Ctl ? Vwap3 : na, color = VWAP3_Col)
-lowerBand_3 = plot(VWAP3_Ctl ? Band3_Lower : na, color = Bands3_Col)
-upperBand_3 = plot(VWAP3_Ctl ? Band3_Upper : na, color = Bands3_Col)
-fill(upperBand_3, lowerBand_3, color = VWAP3_Bgc)
+// Plot MultC Bands and Fill
+multc_lower_2_plot = plot(VWAP2_Ctl and MultC_Ctl ? multc2_lower : na, color=MultC_Bgc)
+multc_upper_2_plot = plot(VWAP2_Ctl and MultC_Ctl ? multc2_upper : na, color=MultC_Bgc)
+fill(multb_upper_2_plot, multc_upper_2_plot, color=MultC_Bgc)
+fill(multb_lower_2_plot, multc_lower_2_plot, color=MultC_Bgc)
 
-vwap_plot4 = plot(VWAP4_Ctl ? Vwap4 : na, color = VWAP4_Col)
-lowerBand_4 = plot(VWAP4_Ctl ? Band4_Lower : na, color = Bands4_Col)
-upperBand_4 = plot(VWAP4_Ctl ? Band4_Upper : na, color = Bands4_Col)
-fill(upperBand_4, lowerBand_4, color = VWAP4_Bgc)
+// Plot MultD Bands and Fill
+multd_lower_2_plot = plot(VWAP2_Ctl and MultD_Ctl ? multd2_lower : na, color=MultD_Bgc)
+multd_upper_2_plot = plot(VWAP2_Ctl and MultD_Ctl ? multd2_upper : na, color=MultD_Bgc)
+fill(multc_upper_2_plot, multd_upper_2_plot, color=MultD_Bgc)
+fill(multc_lower_2_plot, multd_lower_2_plot, color=MultD_Bgc)
 
 // Stocks Markets Sessions
 YourTZ = input.string('UTC+8:00', 'Time Zone', group = 'Basic Setting')
 DaysToShow = input.int(3, 'Days to Show', minval = 1, group = 'Basic Setting')
+Offset = input.int(18, 'Key Level Offset', minval = 1, group = 'Basic Setting')
 
 SessionsGrp = 'Stocks Markets Sessions'
 //Session Tokyo
@@ -383,14 +376,14 @@ if not na(lb_idx) and enable_vp
             PL := polyline.new(PLA, curved = false, closed = true, line_color = show_vp ? vp_color : na, fill_color = show_vp ? vp_color : na, xloc = xloc.bar_time)
             if na(temp_vpoc)
                 temp_vpoc := line.new(lb_time, max_y, time, max_y, xloc = xloc.bar_time, color = show_vpoc ? vpoc_color : na, width = 1)
-                temp_line := line.new(bar_index, max_y, bar_index + 18, max_y, xloc = xloc.bar_index, color = show_vpoc ? vpoc_color : na, width = 1)
-                temp_label := label.new(bar_index + 18, max_y, text = "POC", tooltip = str.tostring(max_y, "#.####"), color = color.rgb(0, 0, 0, 100), textcolor = show_vpoc ? vpoc_color : na, style = label.style_label_left, xloc = xloc.bar_index, text_font_family = font.family_monospace)
+                temp_line := line.new(bar_index, max_y, bar_index + Offset, max_y, xloc = xloc.bar_index, color = show_vpoc ? vpoc_color : na, width = 1)
+                temp_label := label.new(bar_index + Offset, max_y, text = "POC", tooltip = str.tostring(max_y, "#.####"), color = color.rgb(0, 0, 0, 100), textcolor = show_vpoc ? vpoc_color : na, style = label.style_label_left, xloc = xloc.bar_index, text_font_family = font.family_monospace)
                 temp_vpoc
             temp_vpoc.set_y1(max_y)
             temp_vpoc.set_xy2(time, max_y)
             temp_line.set_xy1(bar_index, max_y)
-            temp_line.set_xy2(bar_index + 18, max_y)
-            temp_label.set_xy(bar_index + 18, max_y)
+            temp_line.set_xy2(bar_index + Offset, max_y)
+            temp_label.set_xy(bar_index + Offset, max_y)
 
 if timeframe.change(tf)
     lb_idx := bar_index
@@ -440,7 +433,7 @@ var bool enablelastlastWeeklyLower = input.bool(false, title = 'Lower', group = 
 var bool enablelastlastWeeklyPOC = input.bool(false, title = 'VWAP', group = VWAP_Grp, inline = 'weekly2')
 var bool enablelastlastWeeklyUpper = input.bool(false, title = 'Upper', group = VWAP_Grp, inline = 'weekly2')
 
-currentMonthlyColor = input.color(title = '', defval = color.rgb(240, 98, 146, 20), group = VWAP_Grp, inline = 'monthly3')
+currentMonthlyColor = input.color(title = '', defval = color.rgb(91, 156, 246, 20), group = VWAP_Grp, inline = 'monthly3')
 currentMonthly = input.string(defval = 'Month', title = '', group = VWAP_Grp, inline = 'monthly3', options = ['Month'])
 var bool enablecurrentMonthlyLower = input.bool(false, title = 'Lower', group = VWAP_Grp, inline = 'monthly3')
 var bool enablecurrentMonthlyPOC = input.bool(false, title = 'VWAP', group = VWAP_Grp, inline = 'monthly3')
@@ -450,7 +443,7 @@ var float lastMonthlyLower = na
 var float lastMonthlyUpper = na
 var int lastMonthlyStart = na
 var float lastMonthlyPOC = na
-lastMonthlyColor = input.color(title = '', defval = color.rgb(240, 98, 146, 20), group = VWAP_Grp, inline = 'monthly1')
+lastMonthlyColor = input.color(title = '', defval = color.rgb(91, 156, 246, 20), group = VWAP_Grp, inline = 'monthly1')
 lastMonthly = input.string(defval = '↳', title = '', group = VWAP_Grp, inline = 'monthly1', options = ['↳'])
 var bool enablelastMonthlyLower = input.bool(false, title = 'Lower', group = VWAP_Grp, inline = 'monthly1')
 var bool enablelastMonthlyPOC = input.bool(false, title = 'VWAP', group = VWAP_Grp, inline = 'monthly1')
@@ -460,7 +453,7 @@ var float lastlastMonthlyLower = na
 var float lastlastMonthlyUpper = na
 var int lastlastMonthlyStart = na
 var float lastlastMonthlyPOC = na
-lastlastMonthlyColor = input.color(title = '', defval = color.rgb(240, 98, 146, 20), group = VWAP_Grp, inline = 'monthly2')
+lastlastMonthlyColor = input.color(title = '', defval = color.rgb(91, 156, 246, 20), group = VWAP_Grp, inline = 'monthly2')
 lastlastMonthly = input.string(defval = '↳ ↳', title = '', group = VWAP_Grp, inline = 'monthly2', options = ['↳ ↳'])
 var bool enablelastlastMonthlyLower = input.bool(false, title = 'Lower', group = VWAP_Grp, inline = 'monthly2')
 var bool enablelastlastMonthlyPOC = input.bool(false, title = 'VWAP', group = VWAP_Grp, inline = 'monthly2')
@@ -492,11 +485,17 @@ var bool enablelastlastQuarterlyLower = input.bool(false, title = 'Lower', group
 var bool enablelastlastQuarterlyPOC = input.bool(false, title = 'VWAP', group = VWAP_Grp, inline = 'quarterly2')
 var bool enablelastlastQuarterlyUpper = input.bool(false, title = 'Upper', group = VWAP_Grp, inline = 'quarterly2')
 
-currentyearlyColor = input.color(title = '', defval = color.rgb(91, 156, 246, 20), group = VWAP_Grp, inline = 'yearly3')
+currentyearlyColor = input.color(title = '', defval = color.rgb(240, 98, 146, 20), group = VWAP_Grp, inline = 'yearly3')
 currentyearly = input.string(defval = 'Year', title = '', group = VWAP_Grp, inline = 'yearly3', options = ['Year'])
 var bool enablecurrentyearlyLower = input.bool(false, title = 'Lower', group = VWAP_Grp, inline = 'yearly3')
 var bool enablecurrentyearlyPOC = input.bool(false, title = 'VWAP', group = VWAP_Grp, inline = 'yearly3')
 var bool enablecurrentyearlyUpper = input.bool(false, title = 'Upper', group = VWAP_Grp, inline = 'yearly3')
+
+label_color_setting = color.new(#ecf008, 100)
+right_bar = bar_index + Offset
+format_level = '#.####'
+var DEFAULT_LINE_STYLE = line.style_dotted
+var DEFAULT_LABEL_STYLE = label.style_label_left
 
 calcVWAP(src, isNewPeriod) =>
     [_vwap, _stdevUpper, _] = ta.vwap(src, isNewPeriod, 1)
