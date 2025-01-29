@@ -1,5 +1,5 @@
 //@version=6
-indicator(title = '✘', shorttitle = '✘', overlay = true, max_bars_back = 5000, max_polylines_count = 100, max_boxes_count = 500, max_labels_count = 500, max_lines_count = 500)
+indicator(title = '✘', shorttitle = '✘', overlay = true, max_bars_back = 4999, max_polylines_count = 100, max_boxes_count = 500, max_labels_count = 500, max_lines_count = 500)
 
 VWAP_Ctl = 'VWAP'
 // VWAP #1 Settings
