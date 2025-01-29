@@ -3,7 +3,7 @@
 
 //@version=5
 
-indicator("Stocks Markets Sessions", "Stocks Markets Sessions", overlay = true, max_bars_back = 5000, max_boxes_count = 500,max_labels_count = 500,max_lines_count = 500)
+indicator("Stocks Markets Sessions", "Stocks Markets Sessions", overlay = true, max_bars_back = 4999, max_boxes_count = 500,max_labels_count = 500,max_lines_count = 500)
 
 YourTZ = input.string('UTC+8:00', 'Time Zone',group = 'Basic Setting')
 DaysToShow = input.int(2, "Days to Show", minval = 1, group = "Basic Setting")
